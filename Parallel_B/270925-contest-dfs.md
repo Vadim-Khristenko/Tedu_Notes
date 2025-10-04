@@ -26,42 +26,6 @@ $$
 \mathrm{low}[u]=\min\Big(\mathrm{tin}[u],\ \min_{(u\to w)\ \text{back-edge}}\mathrm{tin}[w],\ \min_{v\in children(u)}\mathrm{low}[v]\Big).
 $$
 
-## Примерно как решать с примером псевдо кода
-
-Псевдокод:
-```
-timer = 0
-for u in 1..n:
-    if not visited[u]:
-        dfs_root = u
-        dfs(u, parent_edge = -1)
-
-function dfs(u, parent_edge):
-    visited[u] = true
-    tin[u] = low[u] = ++timer
-    children = 0
-    for each (v, edge_id) in adj[u]:
-        if edge_id == parent_edge:
-            continue                 # не считаем ребро к родителю
-        if visited[v]:
-            # back-edge
-            low[u] = min(low[u], tin[v])
-        else:
-            children += 1
-            dfs(v, edge_id)
-            low[u] = min(low[u], low[v])
-            if parent_edge != -1 and low[v] >= tin[u]:
-                mark u as articulation
-    if parent_edge == -1 and children > 1:
-        mark u as articulation
-```
-
-Условия артикуляции (сжатое):
-- u не корень и ∃ дочерний v: low[v] ≥ tin[u];
-- u корень и children > 1.
-
-Сложность: O(n + m) по времени и O(n + m) по памяти.
-
 Потенциальные подводные камни:
 - Не забыть запуск DFS для всех компонент (граф может быть несвязным).
 - Корень DFS — отдельный случай (children > 1).

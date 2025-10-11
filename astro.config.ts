@@ -39,7 +39,7 @@ import reading from "./src/utils/remark/reading";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://tedu.vai-prog.ru",
+  site: "https://tedu-notes.ru",
   trailingSlash: "never",
   i18n: {
     locales: ["ru", "en"],

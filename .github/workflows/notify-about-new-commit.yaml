@@ -1,4 +1,4 @@
-name: telegram message
+name: Уведомление о новом коммите
 on: [push]
 jobs:
 

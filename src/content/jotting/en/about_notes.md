@@ -56,7 +56,7 @@ It's my way of saying to the world: *"Here, take this. Maybe it'll help."*
 
 ## 📚 What will you find here? {id: "contents"}
 
-The main content right now is notes from [algocourse.ru](https://algocourse.ru) — a course that became a real pillar in my study of algorithms.
+The main content right now is notes from [algocourses.ru](https://algocourses.ru) — a course that became a real pillar in my study of algorithms.
 
 But this is just the beginning.  
 Plans include expanding: adding notes on architecture, systems programming, mathematics, and simply reflections on how to learn without burning out.

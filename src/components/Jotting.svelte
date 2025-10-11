@@ -41,7 +41,6 @@
 		transition: transform 0.15s ease, border-color 0.15s ease;
 	}
 
-<<<<<<< HEAD
 	.jotting-card:hover {
 		transform: translateY(-4px);
 		border-color: var(--primary-color);
@@ -221,21 +220,6 @@
 		.jotting-pagination {
 			position: static;
 			border-top: none;
-=======
-					&.selected {
-						color: var(--background-color);
-						background-color: var(--primary-color);
-					}
-
-					@media (min-width: 640px) {
-						&:hover {
-							color: var(--background-color);
-							background-color: var(--primary-color);
-						}
-					}
-				}
-			}
->>>>>>> 71ecc62b514811322f579d321afe4588662a2f99
 		}
 	}
 </style>
@@ -288,15 +272,9 @@
 		{/if}
 
 		{#if pages > 1}
-<<<<<<< HEAD
 			<footer class="jotting-pagination">
 				<button type="button" onclick={() => (page = Math.max(1, page - 1))}>{@render left()}</button>
 				<button type="button" class:location={1 == page} onclick={() => (page = 1)}>{1}</button>
-=======
-			<footer class="sticky bottom-0 flex items-center justify-center gap-3 mt-a pb-1 c-weak bg-background font-mono">
-				<button onclick={() => (page = Math.max(1, page - 1))}>{@render left()}</button>
-				<button class:location={1 == page} onclick={() => (page = 1)}>{1}</button>
->>>>>>> 71ecc62b514811322f579d321afe4588662a2f99
 
 				{#if pages > 7 && page > 4}{@render dots()}{/if}
 
@@ -348,16 +326,10 @@
 	const hasFilters = $derived(() => tags.length > 0);
 
 	let filtered: any[] = $derived.by(() => {
-<<<<<<< HEAD
 		const filteredJottings = jottings
-=======
-		let list: any[] = jottings
-			// Apply tag filtering
->>>>>>> 71ecc62b514811322f579d321afe4588662a2f99
 			.filter(jotting => tags.every(tag => jotting.data.tags?.includes(tag)))
 			.sort((a, b) => b.data.top - a.data.top || b.data.timestamp.getTime() - a.data.timestamp.getTime());
 
-<<<<<<< HEAD
 		if (initial) {
 			const query = new URLSearchParams();
 			if (page > 1) query.set("page", String(page));
@@ -366,12 +338,6 @@
 			const url = getRelativeLocaleUrl(locale, `/jotting${search ? `?${search}` : ""}`);
 			window.history.replaceState({ url, random: Math.random(), source: "swup" }, "", url);
 		}
-=======
-		if (!initial) return list;
-
-		// Build URL with current page and tag filters
-		let url = getRelativeLocaleUrl(locale, `/jotting?page=${page}${tags.map(tag => `&tag=${tag}`).join("")}`);
->>>>>>> 71ecc62b514811322f579d321afe4588662a2f99
 
 		return filteredJottings;
 	});

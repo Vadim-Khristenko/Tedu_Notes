@@ -43,7 +43,6 @@
 		font-weight: 600;
 	}
 
-<<<<<<< HEAD
 	.active-chip button {
 		border: none;
 		background: none;
@@ -270,21 +269,6 @@
 		.note-pagination {
 			position: static;
 			border-top: none;
-=======
-					&.selected {
-						color: var(--background-color);
-						background-color: var(--primary-color);
-					}
-
-					@media (min-width: 640px) {
-						&:hover {
-							color: var(--background-color);
-							background-color: var(--primary-color);
-						}
-					}
-				}
-			}
->>>>>>> 71ecc62b514811322f579d321afe4588662a2f99
 		}
 	}
 </style>
@@ -416,7 +400,6 @@ let { locale, notes, series: series_list, tags: tag_list, top, sensitive, left, 
 
 const t = i18nit(locale);
 
-<<<<<<< HEAD
 const size = 20;
 let initial = $state(false);
 let series: string | null = $state(null);
@@ -437,17 +420,6 @@ let filtered: any[] = $derived.by(() => {
 			return matchSeries && matchTags;
 		})
 		.sort((a, b) => b.data.top - a.data.top || b.data.timestamp.getTime() - a.data.timestamp.getTime());
-=======
-	let initial = $state(false); // Track initial load to prevent unexpected effects
-	let series: string | null = $state(null);
-	let tags: string[] = $state([]);
-	let filtered: any[] = $derived.by(() => {
-		let list: any[] = notes
-			// Apply series and tag filtering
-			.filter(note => {
-				// Check if note matches the specified series
-				let match_series = !series || note.data.series == series;
->>>>>>> 71ecc62b514811322f579d321afe4588662a2f99
 
 	if (initial) {
 		const query = new URLSearchParams();
@@ -455,22 +427,8 @@ let filtered: any[] = $derived.by(() => {
 		if (series) query.set("series", series);
 		tags.forEach(tag => query.append("tag", tag));
 
-<<<<<<< HEAD
 		const search = query.toString();
 		const url = getRelativeLocaleUrl(locale, `/note${search ? `?${search}` : ""}`);
-=======
-				return match_series && match_tags;
-			})
-			// Sort by timestamp (newest first)
-			.sort((a, b) => b.data.top - a.data.top || b.data.timestamp.getTime() - a.data.timestamp.getTime());
-
-		if (!initial) return list;
-
-		// Build URL with current page, series, and tag filters
-		let url = getRelativeLocaleUrl(locale, `/note?page=${page}${series ? `&series=${series}` : ""}${tags.map(tag => `&tag=${tag}`).join("")}`);
-
-		// Match https://github.com/swup/swup/blob/main/src/helpers/history.ts#L22
->>>>>>> 71ecc62b514811322f579d321afe4588662a2f99
 		window.history.replaceState({ url, random: Math.random(), source: "swup" }, "", url);
 	}
 

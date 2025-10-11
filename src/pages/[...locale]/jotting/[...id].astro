@@ -1,0 +1,76 @@
+---
+import { i18n } from "astro:config/client";
+import { getCollection, render } from "astro:content";
+import Time from "$utils/time";
+import Base from "$layouts/Base.astro";
+import Icon from "$components/Icon.astro";
+import Position from "$components/Position.astro";
+import Sensitive from "$components/Sensitive.svelte";
+import i18nit from "$i18n";
+
+export async function getStaticPaths() {
+	const jottings = await getCollection("jotting", jotting => !jotting.data.draft);
+
+	return jottings.map(jotting => {
+		const [language, ...id] = jotting.id.split("/");
+
+		return { params: { locale: language == i18n?.defaultLocale ? undefined : language, id: id.join("/") }, props: { jotting } };
+	});
+}
+
+const { locale = i18n!.defaultLocale } = Astro.params;
+const { jotting } = Astro.props;
+const { Content, remarkPluginFrontmatter: frontmatter } = await render(jotting);
+
+const t = i18nit(locale);
+// Helper: split title by \n or <br> into lines for multi-line headings.
+// Controlled by frontmatter flag `title_split` (if false -> do not split; replace separators with space).
+function formatTitle(raw: unknown, splitEnabled = true): string[] {
+	if (raw === undefined || raw === null) return [''];
+	const s = String(raw);
+	if (!splitEnabled) {
+		// replace separators with a single space
+		const single = s.replace(/<br\s*\/?>(\s*)/gi, ' ').replace(/\n+/g, ' ');
+		return [single.trim()];
+	}
+	const replaced = s.replace(/<br\s*\/?>(\s*)/gi, '\n');
+	return replaced.split('\n').map((l) => l.trim());
+}
+
+const titleSplitEnabled: boolean = jotting.data?.title_split === false ? false : true;
+const titleLines: string[] = formatTitle(jotting.data.title, titleSplitEnabled);
+---
+
+<Base title={jotting.data.title} {locale} description={jotting.data.description} article={{ timestamp: jotting.data.timestamp, tags: jotting.data.tags }}>
+	<main class="flex flex-col gap-6">
+		<header class="flex flex-col gap-4">
+			<style>
+				.title-line { display: block; line-height: 1.1; }
+			</style>
+			<h1 class="text-3xl">
+				{titleLines.map(line => (
+					<span class="title-line">{line}</span>
+				))}
+			</h1>
+			<div class="flex flex-col gap-3 sm:flex-row children:(flex items-center gap-1 text-3.5 c-secondary)">
+				<time title={Time.full(jotting.data.timestamp)}><Icon name="lucide:calendar" />{Time(jotting.data.timestamp)}</time>
+				{
+					jotting.data.tags?.length && (
+						<span>
+							<Icon name="lucide:hash" />
+							{jotting.data.tags?.join("; ")}
+						</span>
+					)
+				}
+				<span><Icon name="lucide:pilcrow" />{t("read.words", { words: frontmatter.words })}</span>
+			</div>
+			<hr class="b-b b-b-solid b-weak" />
+		</header>
+
+		<Sensitive {locale} back="/jotting" sensitive={jotting.data.sensitive} client:load>
+			<section id="markdown-content" class="markdown"><Content /></section>
+		</Sensitive>
+
+		<Position {locale} />
+	</main>
+</Base>

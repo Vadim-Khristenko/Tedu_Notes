@@ -1,0 +1,91 @@
+about:
+  introduction: Introduction
+  roll: Link Roll
+feed:
+  address: Subscription address
+  copy:
+    failure: Copy failed, please copy the subscription address manually.
+    name: Copy
+    success: Subscription address copied to clipboard!
+  description: This page is an Atom format content subscription source.
+  last: Last updated
+  usage: >-
+    You can add the current address in any supported reader to subscribe to this
+    content and get the latest content updates in time.
+  visit: This is the feed page. Visit {title} for the full website experience.
+home:
+  heatmap:
+    empty: No words
+    jotting: '{count} jottings'
+    note: '{count} notes'
+  newest: Newest Note
+  prefaces: Prefaces
+jotting:
+  tag: Tag
+  empty: No jottings yet.
+navigation:
+  about: About
+  home: Home
+  jotting: Jotting
+  note: Note
+  policy: Policy
+  preface: Preface
+  subscription: Subscription
+note:
+  contents: Contents
+  series: Series
+  tag: Tag
+  top: To Top
+  empty: No notes
+  last_updated: Last updated
+search:
+  label: Search
+  placeholder: Search notes and jottings...
+  clear: Clear
+  close: Close
+  loading: Loading search index…
+  empty: No matches found.
+  recent_empty: No published entries yet.
+  tip: Navigate with ↑ ↓ and press Enter to open.
+  failed: Failed to load search ({error}).
+  note: Note
+  jotting: Jotting
+  disabled_lead: Search is on pause
+  disabled_message: Vadim is figuring out how to ship search on a serverless site. Thanks for your patience!
+pagination:
+  previous: Previous
+  next: Next
+  page: Page
+read:
+  words:
+    one: '{words} word'
+    many: '{words} words'
+sensitive:
+  back: Return to list
+  continue: I understand, continue reading
+  description: >-
+    This content may contain explicit, violent, bloody, or emotionally
+    triggering material.
+  feed: >
+    <p>This content may contain explicit, violent, bloody, or emotionally
+    triggering material.</p>
+
+    <p>To read, please visit the <a href="{link}">original link</a>.</p>
+  icon: Contains sensitive content
+  title: Content Warning
+  warning: If this content might affect your mental health, please leave immediately!
+statistics: 
+  words:
+    one: 'Wrote {words} word'
+    many: 'Wrote {words} words'
+theme: 'Theme: ThoughtLite'
+mermaid:
+  rendering: 'Rendering diagram…'
+  failed_to_render: 'Mermaid failed to render'
+  controls:
+    copy: 'Copy'
+    copying: 'Copying…'
+    copied: 'Copied!'
+    copied_svg: 'Copied SVG'
+    copy_failed: 'Copy failed'
+    regenerate: 'Regenerate'

@@ -1,0 +1,19 @@
+{
+	"title": "TEDU Notes",
+	"prologue": "Pocket compass for coding journeys.\nBuild by Vadim Khristenko and Community.\nWith ❤️ for learning.",
+	"author": {
+		"name": "Vadim Khristenko",
+		"email": "just@vai-prog.ru",
+		"link": "https://tedu.vai-prog.ru",
+		"bio": "Конспекты и шпаргалки по программированию и алгоритмам"
+	},
+	"description": "Just some IT notes and articles for everybody.",
+	"copyright": {
+		"type": "CC BY-NC-ND 4.0",
+		"year": "2025"
+	},
+	"feed": {
+		"section": "*",
+		"limit": 20
+	}
+}

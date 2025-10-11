@@ -1,0 +1,95 @@
+import { i18n } from "astro:config/client";
+
+// Import translation files for different locales
+import en from "./en.yaml";
+import ru from "./ru.yaml";
+
+// Translation object mapping locale codes to their respective translation data
+const translations = { ru, en };
+
+// Simple plural selector for supported locales
+function selectPluralForm(locale: string, n: number) {
+	if (locale.startsWith("ru")) {
+		const mod10 = n % 10;
+		const mod100 = n % 100;
+		if (mod10 === 1 && mod100 !== 11) return "one";
+		if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return "few";
+		return "many";
+	}
+	// fallback English-like
+	return n === 1 ? "one" : "many";
+}
+
+/**
+ * Create an internationalization function for a specific language
+ * @param language - The target language/locale code (e.g., "en")
+ * @returns Translation function that can translate keys with parameter substitution
+ */
+function i18nit(language: string): (key: string, params?: Record<string, string | number>) => string {
+	/**
+	 * Navigate through nested translation object using dot notation
+	 * @param language - Language code to look up translations in
+	 * @param key - Dot-separated key path (e.g., "notification.reply.title")
+	 * @returns Translation value or undefined if not found
+	 */
+	const nested = (language: string, key: string) => key.split('.').reduce((translation, key) => (translation && typeof translation === 'object') ? translation[key] : undefined, (translations as any)[language]);
+
+	/**
+	 * Get translation with fallback to default locale
+	 * @param key - Translation key to look up
+	 * @returns Translation value from target language or default locale, undefined if not found
+	 */
+	const fallback = (key: string) => nested(language, key) || nested(i18n!.defaultLocale, key);
+
+	/**
+	 * Main translation function with parameter interpolation
+	 * @param key - Translation key to look up
+	 * @param params - Optional parameters for string interpolation (replaces {paramName} placeholders)
+	 * @returns Translated and interpolated string, or the original key if translation not found
+	 */
+	const t = (key: string, params?: Record<string, string | number>) => {
+			const value = fallback(key);
+
+			// If translation is an object, try to resolve plural templates inside it.
+			if (value && typeof value === "object") {
+				// Determine numeric count (accept numeric strings too)
+				let n: number | undefined;
+				if (params && typeof params.words !== "undefined") {
+					const num = Number(params.words);
+					if (!Number.isNaN(num) && Number.isFinite(num)) n = num;
+				}
+
+				// Helper: check if an object looks like plural forms
+				const isPluralObj = (obj: any) => obj && typeof obj === "object" && ("one" in obj || "many" in obj || "few" in obj);
+
+				let pluralSource: any = undefined;
+				if (isPluralObj(value)) {
+					pluralSource = value;
+				} else if (value && typeof value === "object") {
+					// common pattern: { words: { one:..., few:..., many:... } }
+					for (const k of Object.keys(value)) {
+						if (isPluralObj(value[k])) {
+							pluralSource = value[k];
+							break;
+						}
+					}
+				}
+
+				if (pluralSource && typeof n !== "undefined") {
+					const form = selectPluralForm(language, n);
+					const template = pluralSource[form] ?? pluralSource.many ?? JSON.stringify(pluralSource);
+					return String(template).replace(/\{(\w+)\}/g, (_, param) => String(params?.[param] ?? `{${param}}`));
+				}
+			}
+
+			if (typeof value === 'string') {
+				return value.replace(/\{(\w+)\}/g, (_, param) => String(params?.[param] ?? `{${param}}`));
+			}
+
+			return key;
+		};
+
+	return t;
+}
+
+export default i18nit;

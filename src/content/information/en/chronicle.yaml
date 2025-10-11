@@ -1,2 +1,8 @@
 2025-10-06:
   - First version of the website.
+
+2025-10-11:
+  - Moved notes from Hard_B_X to Parallel_B_X.
+  - Fixed KaTex bugs.
+  - Updated GitHub Actions for publishing to GitHub Pages.
+  - Added custom domain.

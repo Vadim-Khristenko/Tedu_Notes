@@ -1,10 +1,11 @@
 ---
 const { title, subtitle, description, author, article } = Astro.props;
+let titleLines = subtitle ? subtitle.replace(/<br\s*\/?>|\n/g, " | ") : "";
 ---
 
 <html lang={Astro.currentLocale}>
 	<head>
-		<title>{subtitle && `${subtitle} |`} {title}</title>
+		<title>{titleLines && `${titleLines} |`} {title}</title>
 		<meta name="description" content={description} />
 
 		<meta charset="utf-8" />
@@ -36,6 +37,8 @@ const { title, subtitle, description, author, article } = Astro.props;
 		{Astro.currentLocale === "zh-tw" && <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200..900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />}
 		{Astro.currentLocale === "ja" && <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200..900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />}
 		{Astro.currentLocale === "ko" && <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@200..900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />}
+		{Astro.currentLocale === "ru" && <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Roboto+Serif:wght@100..900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />}
+		{Astro.currentLocale === "ar" && <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />}
 
 		<script is:inline>
 			var theme = localStorage.getItem("theme");

@@ -67,10 +67,71 @@ function formatTitle(raw: unknown, splitEnabled = true): string[] {
 
 const titleSplitEnabled: boolean = note.data?.title_split === false ? false : true;
 const titleLines: string[] = formatTitle(note.data.title, titleSplitEnabled);
+
+// Generate breadcrumbs
+const localePrefix = locale === i18n?.defaultLocale ? '' : `/${locale}`;
+const breadcrumbs = [
+	{ label: t("navigation.home"), href: `${localePrefix}/` },
+	{ label: t("navigation.note"), href: `${localePrefix}/note` },
+];
+if (note.data.series) {
+	breadcrumbs.push({ label: note.data.series, href: `${localePrefix}/note?series=${encodeURIComponent(note.data.series)}` });
+}
+breadcrumbs.push({ label: formatTitle(note.data.title).join(" - "), href: '#' });
+
+// Structured data for SEO
+const structuredData = {
+	"@context": "https://schema.org",
+	"@type": "Article",
+	"headline": note.data.title,
+	"description": note.data.description,
+	"author": {
+		"@type": "Person",
+		"name": "Vadim Khristenko"
+	},
+	"datePublished": note.data.timestamp.toISOString(),
+	"dateModified": note.data.timestamp.toISOString(),
+	"mainEntityOfPage": {
+		"@type": "WebPage",
+		"@id": `https://tedu-notes.ru${localePrefix}/note/${note.id.replace(/\//g, '-')}`
+	},
+	"publisher": {
+		"@type": "Organization",
+		"name": "T-EDU Notes",
+		"logo": {
+			"@type": "ImageObject",
+			"url": "https://tedu-notes.ru/favicon.svg"
+		}
+	},
+	"articleSection": note.data.series || "Notes",
+	"keywords": note.data.tags?.join(", "),
+	"wordCount": frontmatter.words,
+	"timeRequired": `PT${Math.ceil(frontmatter.words / 200)}M` // Estimate reading time
+};
 ---
 
 <Base title={note.data.title} {locale} description={note.data.description} article={{ timestamp: note.data.timestamp, section: note.data.series, tags: note.data.tags }}>
+	<!-- Structured Data -->
+	<script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+
+	<!-- Reading Progress Bar -->
+	<div id="reading-progress" class="fixed top-0 left-0 w-full h-1 bg-primary z-50 transition-all duration-300"></div>
+
 	<main class="flex flex-col gap-6">
+		<!-- Breadcrumbs -->
+		<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-sm text-secondary">
+			{breadcrumbs.map((crumb, index) => (
+				<>
+					{index > 0 && <Icon name="lucide:chevron-right" class="w-4 h-4" />}
+					{crumb.href.startsWith('#') ? (
+						<span class="font-medium">{crumb.label}</span>
+					) : (
+						<a href={crumb.href} class="hover:text-primary transition-colors">{crumb.label}</a>
+					)}
+				</>
+			))}
+		</nav>
+
 		<header class="flex flex-col gap-4">
 			<style>
 				.title-line { display: block; line-height: 1.1; }
@@ -81,7 +142,10 @@ const titleLines: string[] = formatTitle(note.data.title, titleSplitEnabled);
 				))}
 			</h1>
 			<div class="flex flex-col gap-3 sm:flex-row children:(flex items-center gap-1 text-3.5 c-secondary)">
-				<time title={Time.full(note.data.timestamp)}><Icon name="lucide:calendar" />{Time(note.data.timestamp)}</time>
+				<time title={Time.full(note.data.timestamp)} datetime={note.data.timestamp.toISOString()}>
+					<Icon name="lucide:calendar" />
+					{Time(note.data.timestamp)}
+				</time>
 				{
 					note.data.series && (
 						<span>
@@ -98,20 +162,29 @@ const titleLines: string[] = formatTitle(note.data.title, titleSplitEnabled);
 						</span>
 					)
 				}
-				<span><Icon name="lucide:pilcrow" />{t("read.words", { words: frontmatter.words })}</span>
+				<span>
+					<Icon name="lucide:pilcrow" />
+					{t("read.words", { words: frontmatter.words })}
+				</span>
+				<span>
+					<Icon name="lucide:clock" />
+					{Math.ceil(frontmatter.words / 200)} {t("read.minutes")}
+				</span>
 			</div>
 			<hr class="b-b b-b-solid b-weak" />
 		</header>
 
 		<Sensitive {locale} back="/note" sensitive={note.data.sensitive} client:load>
 			<div class="flex gap-5">
-				<section id="markdown-content" class="markdown"><Content /></section>
+				<section id="markdown-content" class="markdown">
+					<Content />
+				</section>
 				{
 					note.data.contents && (
 						<aside class="hidden sm:(block flex-shrink-0 w-200px)">
 							<div class="sticky top-3 flex flex-col gap-2">
 								<h3>{t("note.contents")}</h3>
-								<nav class="overflow-y-auto">
+								<nav class="overflow-y-auto max-h-80vh">
 									<TOC headings={table_of_contents} />
 								</nav>
 							</div>
@@ -121,6 +194,67 @@ const titleLines: string[] = formatTitle(note.data.title, titleSplitEnabled);
 			</div>
 		</Sensitive>
 
+		<!-- Social Share Buttons -->
+		<div class="flex gap-4 items-center">
+			<span class="text-sm text-secondary">{t("share.title")}:</span>
+			<a
+				href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(note.data.title)}&url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${note.id.replace(/\//g, '-')}`)}`}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+				aria-label={t("share.twitter")}
+			>
+				<Icon name="simple-icons:x" class="w-4 h-4" />
+				X (Twitter)
+			</a>
+			<a
+				href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${note.id.replace(/\//g, '-')}`)}`}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="flex items-center gap-1 px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-800 transition-colors"
+				aria-label={t("share.linkedin")}
+			>
+				<Icon name="simple-icons:linkedin" class="w-4 h-4" />
+				LinkedIn
+			</a>
+		</div>
+
 		<Position {locale} />
 	</main>
 </Base>
+
+<script>
+	// Reading Progress Bar
+	function updateProgress() {
+		const content = document.getElementById('markdown-content');
+		const progress = document.getElementById('reading-progress');
+		if (!content || !progress) return;
+
+		const contentTop = content.offsetTop;
+		const contentHeight = content.offsetHeight;
+		const windowHeight = window.innerHeight;
+		const scrollTop = window.scrollY;
+
+		const progressPercent = Math.min(100, Math.max(0,
+			((scrollTop - contentTop + windowHeight) / contentHeight) * 100
+		));
+
+		progress.style.width = `${progressPercent}%`;
+	}
+
+	document.addEventListener('scroll', updateProgress);
+	document.addEventListener('DOMContentLoaded', updateProgress);
+
+	// Smooth scroll for TOC links
+	document.addEventListener('click', (e) => {
+		const target = e.target as HTMLElement;
+		if (target.matches('a[href^="#"]')) {
+			e.preventDefault();
+			const id = target.getAttribute('href')?.slice(1);
+			const element = document.getElementById(id || '');
+			if (element) {
+				element.scrollIntoView({ behavior: 'smooth' });
+			}
+		}
+	});
+</script>

@@ -27,3 +27,5 @@ wrangler.toml
 
 # jetbrains setting folder
 .idea/
+
+TESTOV_TEST/

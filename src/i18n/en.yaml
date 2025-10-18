@@ -60,6 +60,7 @@ read:
   words:
     one: '{words} word'
     many: '{words} words'
+  minutes: min
 sensitive:
   back: Return to list
   continue: I understand, continue reading
@@ -79,6 +80,26 @@ statistics:
     one: 'Wrote {words} word'
     many: 'Wrote {words} words'
 theme: 'Theme: ThoughtLite'
+share:
+  title: Share
+  twitter: Share on X (Twitter)
+  linkedin: Share on LinkedIn
+404:
+  title: Page Not Found
+  magic_button: Magic!
+  back_home: Back Home
+  hint: Try checking the URL or go back to home
+  magicResults:
+    - "🎉 You found a hidden bonus! +100 knowledge points!"
+    - "🧙‍♂️ Magic worked! The page materialized... almost!"
+    - "🚀 Teleportation activated! But to the wrong place..."
+    - "🎲 Fate dice showed: try another URL!"
+    - "🦄 Unicorn approves your choice. Keep searching!"
+    - "⚡ Energy overloaded! Try reloading the page!"
+    - "🎪 The circus left, but left confetti!"
+    - "🕵️‍♂️ Detective 404 is investigating the case..."
+    - "🎨 Artist drew a new page. Waiting for inspiration!"
+    - "🎪 The show continues! Next act: 200 OK!"
 mermaid:
   rendering: 'Rendering diagram…'
   failed_to_render: 'Mermaid failed to render'

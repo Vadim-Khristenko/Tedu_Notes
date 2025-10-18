@@ -1,13 +1,168 @@
 ---
 import Base from "$layouts/Base.astro";
+import { i18n } from 'astro:config/client';
+import i18nit from "$i18n";
+
+const url = new URL(Astro.request.url);
+const pathSegments = url.pathname.split('/').filter(Boolean);
+const locale = pathSegments[0] === 'en' ? 'en' : i18n?.defaultLocale || 'ru';
+const t = i18nit(locale);
+
+const messages = locale === 'en' ? [
+'Oops, this page went on vacation! 🏖️',
+'404: Page not found, but you found a bug! 🐛',
+'This page decided to play hide and seek. Search! 🔍',
+'404: Search algorithm returned null. Try another query! 💻',
+'Page went for a coffee break. Back in 5 minutes! ☕',
+'404: You found the secret level! But the door is locked. 🚪',
+'This page is in a parallel universe. Use wormhole! 🌀',
+'404: Segment tree returned empty result. 😅',
+'Page got lost in the maze. Help find the exit! 🧩',
+'404: Even DFS couldn\'t find this page! 🌳'
+] : [
+'Ой, кажется, эта страница ушла в отпуск! 🏖️',
+'404: Страница не найдена, но зато вы нашли баг! 🐛',
+'Эта страница решила поиграть в прятки. Ищите! 🔍',
+'404: Алгоритм поиска вернул null. Попробуйте другой запрос! 💻',
+'Страница убежала на кофе-брейк. Вернётся через 5 минут! ☕',
+'404: Вы нашли секретный уровень! Но дверь закрыта. 🚪',
+'Эта страница в параллельной вселенной. Используйте wormhole! 🌀',
+'404: Сегментное дерево вернуло пустой результат. 😅',
+'Страница потерялась в лабиринте. Помогите найти выход! 🧩',
+'404: Даже DFS не смог найти эту страницу! 🌳'
+];
+
+const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+const magicResults = t('404.magicResults') as string[];
 ---
 
-<Base title="404">
-	<main class="contents">
-		<div class="inline-flex flex-col items-center justify-center gap-2 text-center grow-0.5 animate-shaky">
-			<span class="text-6xl font-bold">404</span>
-			<span class="text-2xl">Not Found</span>
-		</div>
-		<a href="/" class="text-lg text-center link">&gt; Back</a>
-	</main>
+<Base title='404' {locale}>
+<main class='contents min-h-screen relative overflow-hidden bg-gradient-to-br from-background via-background to-surface/20'>
+<div class='absolute inset-0 pointer-events-none overflow-hidden'>
+{Array.from({ length: 30 }).map(() => (
+<div class='absolute w-1 h-1 bg-primary/30 rounded-full' style={{ left: Math.random() * 100 + '%', top: Math.random() * 100 + '%', animation: 'float ' + (3 + Math.random() * 4) + 's ease-in-out infinite', animationDelay: Math.random() * 5 + 's' }}></div>
+))}
+</div>
+
+<div class='relative z-10 flex flex-col items-center justify-center min-h-screen gap-6 text-center px-4'>
+<div class='relative'>
+<div class='absolute -inset-8 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-3xl blur-3xl -z-10'></div>
+<div class='text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary animate-pulse select-none'>404</div>
+</div>
+
+<div class='space-y-2 max-w-2xl'>
+<h1 class='text-4xl font-bold text-primary'>{t('404.title')}</h1>
+<div class='h-1 w-45 bg-gradient-to-r from-primary/0 via-primary to-primary/0 mx-auto rounded-full'></div>
+</div>
+
+<div id='message' class='text-xl text-secondary max-w-md mx-auto leading-relaxed h-16 flex items-center justify-center cursor-pointer transition-all duration-300 hover:text-primary'>{randomMessage}</div>
+
+<div class='mt-8 relative group'>
+<div class='absolute -inset-1 bg-gradient-to-r from-primary/60 to-primary/20 rounded-lg blur opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200'></div>
+<button id='magic-button' class='relative px-8 py-4 bg-gradient-to-r from-primary to-primary/80 text-background rounded-lg font-bold text-lg hover:from-primary/90 hover:to-primary transition-all duration-300 transform hover:scale-110 shadow-2xl hover:shadow-primary/50 active:scale-95' type='button'>✨ {t('404.magic_button')} ✨</button>
+</div>
+
+<div id='magic-result' class='hidden mt-8 p-6 bg-gradient-to-br from-surface to-surface/50 rounded-xl border-2 border-primary/30 max-w-md mx-auto shadow-lg backdrop-blur-sm'>
+<div class='text-center'>
+<div class='text-2xl mb-2'>✨</div>
+<div id='magic-text' class='text-lg font-semibold text-primary'></div>
+</div>
+</div>
+
+<div class='mt-12 space-y-3'>
+	<a href={`/${locale === i18n?.defaultLocale ? '' : locale}`} class='back-home-btn inline-block px-8 py-3 text-lg font-medium text-primary border-2 border-primary rounded-lg transition-all duration-300 transform hover:scale-105'>→ {t('404.back_home')}</a>
+<div class='text-sm text-secondary/60'>{t('404.hint')}</div>
+</div>
+</div>
+</main>
 </Base>
+
+<style>
+@keyframes float { 0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; } 25% { transform: translateY(-20px) translateX(10px); opacity: 0.6; } 50% { transform: translateY(-40px) translateX(-10px); opacity: 0.3; } 75% { transform: translateY(-20px) translateX(5px); opacity: 0.5; } }
+@keyframes shimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.2); } }
+main { animation: shimmer 8s ease-in-out infinite; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 4px; opacity: 0.5; }
+
+/* Scoped styles for back-home button to ensure readable hover contrast */
+.back-home-btn {
+	/* keep existing utility colors but allow custom hover */
+	background: transparent;
+}
+.back-home-btn:hover {
+	/* light primary background on hover */
+	background-color: rgba(99, 102, 241, 0.12); /* tailwind primary (indigo-500) approx */
+	/* darken text for contrast */
+	color: rgba(17,17,17,0.88) !important;
+	border-color: rgba(99, 102, 241, 0.6);
+}
+.back-home-btn:active {
+	transform: translateY(1px) scale(0.995);
+}
+</style>
+
+<script define:vars={{ messages, magicResults }}>
+const btn = document.getElementById('magic-button');
+const res = document.getElementById('magic-result');
+const txt = document.getElementById('magic-text');
+const msg = document.getElementById('message');
+
+if(btn) {
+btn.addEventListener('click', (e) => {
+if(!res || !txt) return;
+const result = magicResults[Math.floor(Math.random() * magicResults.length)];
+txt.textContent = result;
+res.classList.remove('hidden');
+res.style.animation = 'none';
+setTimeout(() => { res.style.animation = 'slideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)'; }, 10);
+btn.style.animation = 'none';
+setTimeout(() => { btn.style.animation = 'wiggle 0.6s ease-in-out'; }, 10);
+createConfetti(e.pageX, e.pageY);
+setTimeout(() => {
+res.style.animation = 'slideOut 0.4s ease-in-out';
+setTimeout(() => { res.classList.add('hidden'); }, 400);
+}, 4000);
+});
+}
+
+if(msg) {
+msg.addEventListener('click', () => {
+const newMsg = messages[Math.floor(Math.random() * messages.length)];
+msg.textContent = newMsg;
+msg.style.animation = 'none';
+setTimeout(() => { msg.style.animation = 'fadeIn 0.5s ease-in-out'; }, 10);
+});
+}
+
+function createConfetti(x, y) {
+for(let i = 0; i < 12; i++) {
+const p = document.createElement('div');
+p.style.cssText = 'position:fixed;left:' + x + 'px;top:' + y + 'px;pointer-events:none;font-size:20px;z-index:9999;opacity:1';
+p.textContent = ['✨','🎉','⭐','💫','🌟'][Math.floor(Math.random() * 5)];
+document.body.appendChild(p);
+const dur = 1 + Math.random() * 1;
+const sx = x, sy = y;
+const vx = (Math.random() - 0.5) * 400;
+const vy = -200 - Math.random() * 300;
+const st = performance.now();
+function anim(ct) {
+const el = (ct - st) / 1000;
+if(el > dur) { p.remove(); return; }
+const pr = el / dur;
+const xp = sx + vx * el;
+const yp = sy + vy * el + 0.5 * 800 * el * el;
+p.style.left = xp + 'px';
+p.style.top = yp + 'px';
+p.style.opacity = (1 - pr) * 0.8;
+p.style.transform = 'scale(' + (1 - pr * 0.5) + ')';
+requestAnimationFrame(anim);
+}
+requestAnimationFrame(anim);
+}
+}
+
+const st = document.createElement('style');
+st.textContent = '@keyframes slideIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } } @keyframes slideOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(20px) scale(0.95); } } @keyframes wiggle { 0%, 100% { transform: rotate(0deg) scale(1); } 25% { transform: rotate(-2deg) scale(1.05); } 50% { transform: rotate(2deg) scale(1.1); } 75% { transform: rotate(-1deg) scale(1.05); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }';
+document.head.appendChild(st);
+</script>

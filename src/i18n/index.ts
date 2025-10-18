@@ -23,9 +23,9 @@ function selectPluralForm(locale: string, n: number) {
 /**
  * Create an internationalization function for a specific language
  * @param language - The target language/locale code (e.g., "en")
- * @returns Translation function that can translate keys with parameter substitution
+ * @returns Translation function that can translate keys with parameter substitution, arrays, or return raw values
  */
-function i18nit(language: string): (key: string, params?: Record<string, string | number>) => string {
+function i18nit(language: string): (key: string, params?: Record<string, string | number>) => string | string[] | any {
 	/**
 	 * Navigate through nested translation object using dot notation
 	 * @param language - Language code to look up translations in
@@ -45,10 +45,15 @@ function i18nit(language: string): (key: string, params?: Record<string, string 
 	 * Main translation function with parameter interpolation
 	 * @param key - Translation key to look up
 	 * @param params - Optional parameters for string interpolation (replaces {paramName} placeholders)
-	 * @returns Translated and interpolated string, or the original key if translation not found
+	 * @returns Translated and interpolated string, or the original key if translation not found. Can also return arrays or other types directly.
 	 */
-	const t = (key: string, params?: Record<string, string | number>) => {
+	const t = (key: string, params?: Record<string, string | number>): string | string[] | any => {
 			const value = fallback(key);
+
+			// If the value is an array, return it directly
+			if (Array.isArray(value)) {
+				return value;
+			}
 
 			// If translation is an object, try to resolve plural templates inside it.
 			if (value && typeof value === "object") {

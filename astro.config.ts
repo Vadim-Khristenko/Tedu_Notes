@@ -36,6 +36,8 @@ import mermaidRemark from "./src/utils/remark/mermaid";
 import wrapper from "./src/utils/remark/table-wrapper";
 import copy from "./src/utils/code-copy";
 import reading from "./src/utils/remark/reading";
+import pseudocode from "./src/utils/remark/pseudocode";
+import justNcvGrammar from "./src/utils/shiki/just-ncv-grammar";
 
 // https://astro.build/config
 export default defineConfig({
@@ -60,8 +62,9 @@ export default defineConfig({
       spoiler,
       CJK,
       [CJK_strikethrough, { singleTilde: false }],
-      math,
-      gemoji,
+  math,
+  gemoji,
+  (pseudocode as any),
       footnote,
       abbr,
       mermaidRemark,
@@ -105,6 +108,14 @@ export default defineConfig({
         },
         dark: "dark-plus"
       },
+      langs: ( [
+        {
+          id: 'just-ncv',
+          scopeName: justNcvGrammar.scopeName,
+          grammar: justNcvGrammar as any,
+          aliases: ['just-ncv', 'pseudocode', 'ncv', 'ncvl']
+        }
+      ] as any),
       transformers: [
         copy({
           duration: 1500
@@ -149,6 +160,7 @@ export default defineConfig({
           "circle-check",
           "circle-question-mark",
           "circle-x",
+          "clock",
           "clock-arrow-down",
           "clock-arrow-up",
           "copyright",
@@ -185,13 +197,15 @@ export default defineConfig({
           "user-round",
           "user-round-pen",
           "user-round-x",
-          "x"
+          "x",
+          "chevron-right"
         ],
         "simple-icons": [
           "astro",
           "svelte",
           "github",
           "google",
+          "linkedin",
           "x",
         ],
         "svg-spinners": [

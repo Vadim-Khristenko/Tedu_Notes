@@ -6,3 +6,9 @@
   - Fixed KaTex bugs.
   - Updated GitHub Actions for publishing to GitHub Pages.
   - Added custom domain.
+
+2025-10-23:
+  - "Major update: revamped the homepage with a new design and improved navigation."
+  - "Search: prepared a replacement engine and optimized the index (local + server fallbacks)."
+  - "Feeds: expanded RSS/Atom/JSON support, added preview drafts for developers."
+  - "Sharing: added convenient share options (including Telegram), minor UI and localization tweaks."

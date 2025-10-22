@@ -14,9 +14,15 @@ export async function getStaticPaths() {
  * GET endpoint for generating feeds
  * Supports filtering by language, series, and tags
  */
-export const GET: APIRoute = async ({ site, params }) => {
+export const GET: APIRoute = async ({ site, params, url }) => {
 	const { locale: language = i18n?.defaultLocale! } = params;
 	const t = i18nit(language);
+
+	const preview = url.searchParams.get("preview") === "1" || import.meta.env.PUBLIC_PREVIEW === "true" || import.meta.env.DEV;
+	const sectionParam = url.searchParams.get("section");
+	const only = (sectionParam ?? (Array.isArray(config.feed?.section) ? (config.feed?.section as string[]).join(",") : (config.feed?.section ?? "*") as string)).split(",");
+	const series = url.searchParams.get("series") ?? undefined;
+	const tag = url.searchParams.get("tag") ?? undefined;
 
 	// Initialize feed with site metadata and configuration
 	const feed = new Feed({
@@ -36,7 +42,7 @@ export const GET: APIRoute = async ({ site, params }) => {
 	// Aggregate items from specified sections
 	let items = [];
 
-	if (config.feed?.section?.includes("note") || config.feed?.section === "*" || config.feed?.section === undefined) {
+	if (only.includes("note") || only.includes("*") || config.feed?.section === undefined) {
 		let notes = (await getCollection("note", note => {
 			// Extract language from the file path structure
 			const [locale, ...id] = note.id.split("/");
@@ -45,17 +51,19 @@ export const GET: APIRoute = async ({ site, params }) => {
 			(<any>note).link = new URL(getRelativeLocaleUrl(locale, `/note/${id.join("/")}`), site).toString();
 
 			// Apply filtering criteria
-			let published = !note.data.draft;		// Exclude draft posts
-			let localed = language == locale;		// Language filter
+			let published = preview ? true : !note.data.draft;        // Include drafts if preview
+			let localed = language == locale;        // Language filter
+			let inSeries = series ? note.data.series === series : true;
+			let hasTag = tag ? (note.data.tags ?? []).includes(tag) : true;
 
 			// Include note only if it passes all filters
-			return published && localed;
+			return published && localed && inSeries && hasTag;
 		}));
 
 		items.push(...notes);
 	}
 
-	if (config.feed?.section?.includes("jotting") || config.feed?.section === "*" || config.feed?.section === undefined) {
+	if (only.includes("jotting") || only.includes("*") || config.feed?.section === undefined) {
 		let jottings = (await getCollection("jotting", jotting => {
 			// Extract language from the file path structure
 			const [locale, ...id] = jotting.id.split("/");
@@ -64,11 +72,12 @@ export const GET: APIRoute = async ({ site, params }) => {
 			(<any>jotting).link = new URL(getRelativeLocaleUrl(locale, `/jotting/${id.join("/")}`), site).toString();
 
 			// Apply filtering criteria
-			let published = !jotting.data.draft;	// Exclude draft posts
-			let localed = language == locale;		// Language filter
+			let published = preview ? true : !jotting.data.draft;    // Include drafts if preview
+			let localed = language == locale;       // Language filter
+			let hasTag = tag ? (jotting.data.tags ?? []).includes(tag) : true;
 
 			// Include note only if it passes all filters
-			return published && localed;
+			return published && localed && hasTag;
 		}));
 
 		items.push(...jottings);

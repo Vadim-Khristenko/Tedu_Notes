@@ -69,7 +69,9 @@ const titleSplitEnabled: boolean = note.data?.title_split === false ? false : tr
 const titleLines: string[] = formatTitle(note.data.title, titleSplitEnabled);
 
 // Generate breadcrumbs
-const localePrefix = locale === i18n?.defaultLocale ? '' : `/${locale}`;
+let localePrefix = locale === i18n?.defaultLocale ? '' : `/${locale}`;
+if (localePrefix === '/ru') { localePrefix = ''; } // Russian is default locale
+let realNoteId = typeof note.id === 'string' ? note.id.replace(/^[^/]*\//, '') : String(note.id);
 const breadcrumbs = [
 	{ label: t("navigation.home"), href: `${localePrefix}/` },
 	{ label: t("navigation.note"), href: `${localePrefix}/note` },
@@ -112,7 +114,7 @@ const structuredData = {
 
 <Base title={note.data.title} {locale} description={note.data.description} article={{ timestamp: note.data.timestamp, section: note.data.series, tags: note.data.tags }}>
 	<!-- Structured Data -->
-	<script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+	<script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline />
 
 	<!-- Reading Progress Bar -->
 	<div id="reading-progress" class="fixed top-0 left-0 w-full h-1 bg-primary z-50 transition-all duration-300"></div>
@@ -195,27 +197,43 @@ const structuredData = {
 		</Sensitive>
 
 		<!-- Social Share Buttons -->
-		<div class="flex gap-4 items-center">
+		<div class="flex gap-3 items-center social-share">
 			<span class="text-sm text-secondary">{t("share.title")}:</span>
+			{/** Common template for share url and label */}
+			{/** Twitter / X */}
 			<a
-				href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(note.data.title)}&url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${note.id.replace(/\//g, '-')}`)}`}
+				href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(note.data.title)}&url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${realNoteId}`)}`}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+				class="share-btn share-btn--twitter"
 				aria-label={t("share.twitter")}
 			>
 				<Icon name="simple-icons:x" class="w-4 h-4" />
-				X (Twitter)
+				<span class="sr-only">{t("share.twitter")}</span>
 			</a>
+
+			{/** Telegram */}
 			<a
-				href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${note.id.replace(/\//g, '-')}`)}`}
+				href={`https://t.me/share/url?url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${realNoteId}`)}&text=${encodeURIComponent(note.data.title)}`}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="flex items-center gap-1 px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-800 transition-colors"
+				class="share-btn share-btn--telegram"
+				aria-label={t("share.telegram")}
+			>
+				<Icon name="simple-icons:telegram" class="w-4 h-4" />
+				<span class="sr-only">{t("share.telegram")}</span>
+			</a>
+
+			{/** LinkedIn */}
+			<a
+				href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${realNoteId}`)}`}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="share-btn share-btn--linkedin"
 				aria-label={t("share.linkedin")}
 			>
 				<Icon name="simple-icons:linkedin" class="w-4 h-4" />
-				LinkedIn
+				<span class="sr-only">{t("share.linkedin")}</span>
 			</a>
 		</div>
 
@@ -258,3 +276,36 @@ const structuredData = {
 		}
 	});
 </script>
+
+<style>
+/* Small helper for accessible text only visible to screen readers */
+.sr-only {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0,0,0,0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+.share-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	width: 40px;
+	height: 36px;
+	border-radius: 8px;
+	color: var(--background-color);
+	transition: transform 0.12s ease, background-color 0.12s ease;
+}
+.share-btn--twitter { background: #1DA1F2; }
+.share-btn--twitter:hover { background: #0d8ae6; transform: translateY(-2px); }
+.share-btn--telegram { background: #26A5E4; }
+.share-btn--telegram:hover { background: #1b8fc5; transform: translateY(-2px); }
+.share-btn--linkedin { background: #0077B5; }
+.share-btn--linkedin:hover { background: #005f95; transform: translateY(-2px); }
+</style>

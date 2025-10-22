@@ -28,19 +28,20 @@ type SearchRecord = {
 const sortByImportance = (a: SearchRecord, b: SearchRecord) =>
 	b.priority - a.priority || Date.parse(b.timestamp) - Date.parse(a.timestamp);
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, url }) => {
 	const language = (params.locale as string | undefined) ?? i18n?.defaultLocale ?? "en";
+	const preview = url.searchParams.get("preview") === "1" || import.meta.env.PUBLIC_PREVIEW === "true" || import.meta.env.DEV;
 
 	const notes = await getCollection("note", note => {
 		const [locale] = note.id.split("/");
 		const hidden = note.data.remove_from_search ?? false;
-		const published = !note.data.draft;
+		const published = preview ? true : !note.data.draft;
 		return published && !hidden && locale === language;
 	});
 
 	const jottings = await getCollection("jotting", jotting => {
 		const [locale] = jotting.id.split("/");
-		const published = !jotting.data.draft;
+		const published = preview ? true : !jotting.data.draft;
 		return published && locale === language;
 	});
 

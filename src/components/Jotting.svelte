@@ -24,6 +24,16 @@
 		justify-content: space-between;
 	}
 
+	.jotting-quicksearch {
+		border: 1px solid var(--weak-color);
+		border-radius: 10px;
+		padding: 8px 12px;
+		background: transparent;
+		color: var(--text-color);
+		min-width: 300px;
+		max-width: 420px;
+	}
+
 	.jotting-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -229,6 +239,7 @@
 		<header class="jotting-toolbar">
 			<h2 class="text-size-lg font-semibold">{t("navigation.jotting")}</h2>
 			<div class="flex items-center gap-2">
+				<input class="jotting-quicksearch" type="search" placeholder={t("search.placeholder") ?? "Поиск…"} bind:value={q} />
 				<span class="text-3.5 c-remark">{filtered.length} / {jottings.length}</span>
 				{#if hasFilters()}
 					<button class="clear-filters" type="button" onclick={clearFilters}>{t("search.clear") ?? "Clear"}</button>
@@ -324,16 +335,25 @@
 	let initial = $state(false);
 	let tags: string[] = $state([]);
 	const hasFilters = $derived(() => tags.length > 0);
+	let q: string = $state("");
 
 	let filtered: any[] = $derived.by(() => {
+		const lower = q.trim().toLowerCase();
 		const filteredJottings = jottings
-			.filter(jotting => tags.every(tag => jotting.data.tags?.includes(tag)))
+			.filter(jotting => {
+				const matchQuery = !lower
+					|| String(jotting.data.title ?? "").toLowerCase().includes(lower)
+					|| String(jotting.data.description ?? "").toLowerCase().includes(lower);
+				const matchTags = tags.every(tag => jotting.data.tags?.includes(tag));
+				return matchQuery && matchTags;
+			})
 			.sort((a, b) => b.data.top - a.data.top || b.data.timestamp.getTime() - a.data.timestamp.getTime());
 
 		if (initial) {
 			const query = new URLSearchParams();
 			if (page > 1) query.set("page", String(page));
 			tags.forEach(tag => query.append("tag", tag));
+			if (q.trim()) query.set("q", q.trim());
 			const search = query.toString();
 			const url = getRelativeLocaleUrl(locale, `/jotting${search ? `?${search}` : ""}`);
 			window.history.replaceState({ url, random: Math.random(), source: "swup" }, "", url);
@@ -368,6 +388,7 @@
 
 		page = Number(params.get("page")) || 1;
 		tags = params.getAll("tag");
+		q = params.get("q") ?? "";
 
 		initial = true;
 	});

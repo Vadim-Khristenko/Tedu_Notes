@@ -57,11 +57,14 @@ function i18nit(language: string): (key: string, params?: Record<string, string 
 
 			// If translation is an object, try to resolve plural templates inside it.
 			if (value && typeof value === "object") {
-				// Determine numeric count (accept numeric strings too)
+				// Determine numeric count from 'words' or 'count' parameter (accept numeric strings too)
 				let n: number | undefined;
-				if (params && typeof params.words !== "undefined") {
-					const num = Number(params.words);
-					if (!Number.isNaN(num) && Number.isFinite(num)) n = num;
+				if (params) {
+					const countValue = params.words !== undefined ? params.words : params.count;
+					if (countValue !== undefined) {
+						const num = Number(countValue);
+						if (!Number.isNaN(num) && Number.isFinite(num)) n = num;
+					}
 				}
 
 				// Helper: check if an object looks like plural forms

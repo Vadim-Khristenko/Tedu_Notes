@@ -1,6 +1,18 @@
 about:
   introduction: Introduction
   roll: Link Roll
+  hero:
+    subtitle: Inside the learning lab behind TEDU Notes — why we write, design, and share everything openly.
+    byline: Created by {name}
+    contact: Stay in touch
+    links:
+      email: Email
+      website: Website
+      rss: RSS Feed
+  chronicle:
+    title: Project timeline
+    subtitle: Milestones, launches, and rewrites that shaped the notebook.
+    empty: No entries yet — the story is still being written.
 feed:
   address: Subscription address
   copy:
@@ -14,12 +26,52 @@ feed:
     content and get the latest content updates in time.
   visit: This is the feed page. Visit {title} for the full website experience.
 home:
+  hero:
+    eyebrow: Learning log
+    title: Notes, algorithms, and experiments
+    description: Deep dives into programming contests, toolmaking experiments, and handwritten study notes in English and Russian.
+    actions:
+      notes: Browse notes
+      jottings: See jotting log
+      rss: Follow via RSS
+    info:
+      search: Local-first search works entirely offline once loaded.
+      rss: RSS/Atom/JSON feeds ship every update instantly.
+    stats:
+      notes: 
+        one: '{count} note'
+        many: '{count} notes'
+      jottings: 
+        one: '{count} jotting'
+        many: '{count} jottings'
   heatmap:
     empty: No words
-    jotting: '{count} jottings'
-    note: '{count} notes'
+    jotting: 
+      one: '{count} jotting'
+      many: '{count} jottings'
+    note: 
+      one: '{count} note'
+      many: '{count} notes'
   newest: Newest Note
   prefaces: Prefaces
+  preface:
+    title: Preface
+    cta: Read full preface
+  latest:
+    title: Fresh updates
+    subtitle: The most recent long-form note and jotting entry.
+    note: Latest note
+    jotting: Latest jotting
+    empty: Nothing published yet—check back soon.
+  rss:
+    title: Stay in touch via RSS
+    description: Pick the feed format you prefer and add it to your reader.
+    feeds: Available feeds
+    atom: Atom
+    rss: RSS
+    json: JSON Feed
+    hint: Tip — the feed reflects preview drafts too when you enable preview mode.
+    button: Subscribe now
 jotting:
   tag: Tag
   empty: No jottings yet.
@@ -50,8 +102,6 @@ search:
   failed: Failed to load search ({error}).
   note: Note
   jotting: Jotting
-  disabled_lead: Search is on pause
-  disabled_message: Vadim is figuring out how to ship search on a serverless site. Thanks for your patience!
 pagination:
   previous: Previous
   next: Next
@@ -84,6 +134,7 @@ share:
   title: Share
   twitter: Share on X (Twitter)
   linkedin: Share on LinkedIn
+  telegram: Share on Telegram
 404:
   title: Page Not Found
   magic_button: Magic!

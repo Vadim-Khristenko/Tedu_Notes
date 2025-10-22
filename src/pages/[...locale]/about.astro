@@ -1,17 +1,18 @@
 ---
 import { i18n } from "astro:config/client";
-import { getCollection } from "astro:content";
+import { getRelativeLocaleUrl } from "astro:i18n";
+import { getCollection, render } from "astro:content";
+import { Icon } from "astro-icon/components";
 import Time from "$utils/time";
 import Base from "$layouts/Base.astro";
+import config from "$config";
 import i18nit from "$i18n";
-import { render } from "astro:content";
 
 export async function getStaticPaths() {
 	return i18n?.locales.map(locale => ({ params: { locale: locale == i18n?.defaultLocale ? undefined : (locale as string) } }));
 }
 
 const { locale = i18n!.defaultLocale } = Astro.params;
-
 const t = i18nit(locale);
 
 const information = await getCollection("information", information => {
@@ -30,63 +31,443 @@ let chronicle = information.find(info => info.id == "chronicle")?.data;
 let chronicles = Object.entries<string[]>(chronicle ?? {})
 	.map(([date, events]) => ({ date: new Date(date), events: events ?? [] }))
 	.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+type Author = {
+	name?: string;
+	email?: string;
+	link?: string;
+};
+
+// Normalize and type the author object from config to satisfy TS and provide
+// safe runtime checks below. Some build-time tools can infer a union type
+// that lacks optional properties, so we cast and guard at runtime.
+const prologueLines = (config.prologue ?? "")
+	.split("\n")
+	.map(line => line.trim())
+	.filter(Boolean);
+
+const author = (config.author ?? {}) as Author;
+const hasAuthorEmail = typeof author?.email === "string" && author.email.length > 0;
+const hasAuthorLink = typeof author?.link === "string" && author.link.length > 0;
+const authorName = author?.name ?? config.title;
 ---
 
-<style lang="less">
-	article {
-		div {
-			margin-bottom: 2rem;
-
-			h1 {
-				margin-bottom: 1rem;
-
-				font-size: 1.8rem;
-			}
-		}
-	}
-</style>
-
 <Base title={t("navigation.about")} {locale}>
-	<main class="flex flex-col sm:flex-row justify-between gap-2">
-		<article class="flex flex-col">
-			{
-				introduction && (
-					<div>
-						<h1>{t("about.introduction")}</h1>
-						<samp class="markdown">
-							<Introduction />
-						</samp>
+	<main class="about">
+		<section class="about__hero">
+			<div class="about__hero-main">
+				<span class="about__badge">{t("navigation.about")}</span>
+				<h1 class="about__title">{config.title}</h1>
+				<p class="about__subtitle">{t("about.hero.subtitle")}</p>
+				<p class="about__byline">{t("about.hero.byline", { name: authorName })}</p>
+				<div class="about__hero-links">
+					<span>{t("about.hero.contact")}</span>
+					<div class="about__hero-link-buttons">
+						{hasAuthorEmail && (
+							<a href={`mailto:${author.email}`}>
+								<Icon name="lucide:mail" is:inline size={18} />
+								{t("about.hero.links.email")}
+							</a>
+						)}
+						{hasAuthorLink && (
+							<a href={author.link} target="_blank" rel="noopener">
+								<Icon name="lucide:globe-2" is:inline size={18} />
+								{t("about.hero.links.website")}
+							</a>
+						)}
+						<a href={getRelativeLocaleUrl(locale, "/feed.xml")} target="_blank" rel="noopener">
+							<Icon name="lucide:rss" is:inline size={18} />
+							{t("about.hero.links.rss")}
+						</a>
 					</div>
-				)
-			}
-			{
-				roll && (
-					<div>
-						<h1>{t("about.roll")}</h1>
-						<samp class="markdown">
-							<Roll />
-						</samp>
-					</div>
-				)
-			}
-		</article>
+				</div>
+				<div class="about__hero-actions">
+					<a class="about-button about-button--primary" href={getRelativeLocaleUrl(locale, "/note")}>
+						<Icon name="lucide:list" is:inline size={18} />
+						{t("home.hero.actions.notes")}
+					</a>
+					<a class="about-button about-button--ghost" href={getRelativeLocaleUrl(locale, "/jotting")}>
+						<Icon name="lucide:feather" is:inline size={18} />
+						{t("home.hero.actions.jottings")}
+					</a>
+				</div>
+			</div>
+			{config.prologue && prologueLines.length > 0 && (
+				<blockquote class="about__hero-quote">
+					{prologueLines.map(line => (
+						<span>{line}</span>
+					))}
+				</blockquote>
+			)}
+		</section>
 
-		<aside class="flex flex-col justify-between flex-basis-300px flex-shrink-0 mb-3 pl-5">
-			<ul class="list-none">
-				{
-					chronicles.map(chronicle => (
-						<li class="relative mb-2 pb-2 before:(absolute content-empty top-3.4 left--3.8 h-full b-l-2 b-l-solid b-primary) last:after:(absolute content-empty left--5 bottom--4 w-2 h-2 b-2 b-solid b-primary rd-full bg-primary)">
-							<span class="relative font-mono before:(absolute content-empty inline-block top-1 left--5 w-2 h-2 b-2 b-solid b-primary rd-full)">{Time.date(chronicle.date)}</span>
-							<ul class="my-2 pl-4 list-none">
+		<section class="about__content">
+			{introduction && (
+				<article class="about-card">
+					<header>
+						<span>{t("about.introduction")}</span>
+					</header>
+					<div class="markdown">
+						<Introduction />
+					</div>
+				</article>
+			)}
+			{roll && (
+				<article class="about-card">
+					<header>
+						<span>{t("about.roll")}</span>
+					</header>
+					<div class="markdown">
+						<Roll />
+					</div>
+				</article>
+			)}
+		</section>
+
+		<section class="about__timeline">
+			<header class="about__timeline-header">
+				<h2>{t("about.chronicle.title")}</h2>
+				<br>
+				<p>{t("about.chronicle.subtitle")}</p>
+			</header>
+			{chronicles.length ? (
+				<ol class="timeline">
+					{chronicles.map(chronicle => (
+						<li class="timeline__item">
+							<div class="timeline__date">
+								<time datetime={chronicle.date.toISOString()}>{Time.date.locale(chronicle.date, locale)}</time>
+							</div>
+							<ul class="timeline__events">
 								{chronicle.events.map(event => {
 									const remove = event?.match(/^~(?!~)(.*)$/);
-									return <li class="relative my-1 before:(absolute content-empty inline-block top-2 left--4 w-1 h-1 b b-solid b-primary rd-full)">{remove ? <del>{remove[1]}</del> : event}</li>;
+									return (
+										<li class="timeline__event">{remove ? <del>{remove[1]}</del> : event}</li>
+									);
 								})}
 							</ul>
 						</li>
-					))
-				}
-			</ul>
-		</aside>
+					))}
+				</ol>
+			) : (
+				<p class="timeline__empty">{t("about.chronicle.empty")}</p>
+			)}
+		</section>
 	</main>
 </Base>
+
+<style lang="less">
+	.about {
+		display: flex;
+		flex-direction: column;
+		gap: clamp(2rem, 3vw, 3.5rem);
+		padding-bottom: clamp(2rem, 4vw, 4rem);
+	}
+
+	.about__hero {
+		display: grid;
+		gap: clamp(1.5rem, 3vw, 3rem);
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		align-items: stretch;
+		padding: clamp(1.8rem, 4vw, 3rem);
+		border-radius: 28px;
+		border: 1px solid color-mix(in oklab, var(--primary-color) 25%, transparent);
+		background:
+			radial-gradient(120% 120% at 0% 0%, color-mix(in oklab, var(--primary-color) 18%, transparent) 0%, transparent 60%),
+			var(--block-color);
+		box-shadow: 0 24px 60px #00000012;
+	}
+
+	.about__hero-main {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.about__badge {
+		align-self: flex-start;
+		padding: 0.35rem 0.85rem;
+		border-radius: 999px;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: color-mix(in oklab, var(--primary-color) 65%, var(--text-color));
+		background: color-mix(in oklab, var(--primary-color) 12%, transparent);
+	}
+
+	.about__title {
+		margin: 0;
+		font-size: clamp(2.2rem, 5vw, 3.2rem);
+		line-height: 1.05;
+	}
+
+	.about__subtitle {
+		margin: 0;
+		font-size: clamp(1rem, 2.2vw, 1.2rem);
+		color: var(--remark-color);
+		max-width: 50ch;
+	}
+
+	.about__byline {
+		margin: 0;
+		color: color-mix(in oklab, var(--primary-color) 60%, var(--text-color));
+		font-weight: 600;
+	}
+
+	.about__hero-links {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		margin-top: 0.5rem;
+	}
+
+	.about__hero-links > span {
+		text-transform: uppercase;
+		font-size: 0.75rem;
+		letter-spacing: 0.16em;
+		color: color-mix(in oklab, var(--remark-color) 70%, var(--text-color));
+	}
+
+	.about__hero-link-buttons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+	}
+
+	.about__hero-link-buttons a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		padding: 0.45rem 0.85rem;
+		border-radius: 999px;
+		border: 1px solid color-mix(in oklab, var(--primary-color) 35%, transparent);
+		background: color-mix(in oklab, var(--primary-color) 10%, transparent);
+		font-size: 0.9rem;
+		font-weight: 500;
+		transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+	}
+
+	.about__hero-link-buttons a:hover {
+		transform: translateY(-1px);
+		border-color: var(--primary-color);
+		background: color-mix(in oklab, var(--primary-color) 18%, transparent);
+	}
+
+	.about__hero-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+	}
+
+	.about-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.6rem 1.1rem;
+		border-radius: 999px;
+		font-weight: 600;
+		font-size: 0.95rem;
+		border: 1px solid transparent;
+		transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+	}
+
+	.about-button--primary {
+		background: var(--primary-color);
+		color: var(--background-color);
+	}
+
+	.about-button--ghost {
+		color: var(--primary-color);
+		background: color-mix(in oklab, var(--primary-color) 10%, transparent);
+		border-color: color-mix(in oklab, var(--primary-color) 40%, transparent);
+	}
+
+	.about-button:hover {
+		transform: translateY(-1px);
+		border-color: var(--primary-color);
+	}
+
+	.about__hero-quote {
+		margin: 0;
+		padding: clamp(1.2rem, 3vw, 1.8rem);
+		border-radius: 20px;
+		border: 1px solid color-mix(in oklab, var(--primary-color) 20%, transparent);
+		background: color-mix(in oklab, var(--background-color) 94%, var(--primary-color) 6%);
+		display: flex;
+		flex-direction: column;
+		gap: 0.45rem;
+		font-size: 1rem;
+		line-height: 1.5;
+		font-style: italic;
+	}
+
+	.about__hero-quote span {
+		display: block;
+	}
+
+	.about__content {
+		display: grid;
+		gap: clamp(1.2rem, 2vw, 1.8rem);
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	}
+
+	.about-card {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		padding: clamp(1.5rem, 3vw, 2.1rem);
+		border-radius: 20px;
+		border: 1px solid color-mix(in oklab, var(--primary-color) 18%, transparent);
+		background: var(--block-color);
+		box-shadow: 0 18px 40px #00000012;
+	}
+
+	.about-card header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.about-card header span {
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		font-size: 0.8rem;
+		color: color-mix(in oklab, var(--remark-color) 70%, var(--text-color));
+		font-weight: 600;
+	}
+
+	.about-card .markdown {
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+		line-height: 1.6;
+	}
+
+	.about__timeline {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+		padding: clamp(1.6rem, 3vw, 2.4rem);
+		border-radius: 24px;
+		border: 1px dashed color-mix(in oklab, var(--primary-color) 30%, transparent);
+		background: color-mix(in oklab, var(--background-color) 92%, var(--primary-color) 8%);
+		box-shadow: 0 18px 40px #00000010;
+	}
+
+	.about__timeline-header h2 {
+		margin: 0;
+		font-size: clamp(1.6rem, 3vw, 2.2rem);
+	}
+
+	.about__timeline-header p {
+		margin: 0;
+		color: var(--remark-color);
+		max-width: 50ch;
+	}
+
+	.timeline {
+		position: relative;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.timeline::before {
+		content: "";
+		position: absolute;
+		left: 0.6rem;
+		top: 0.5rem;
+		bottom: 0.5rem;
+		width: 2px;
+		background: color-mix(in oklab, var(--primary-color) 40%, transparent);
+	}
+
+	.timeline__item {
+		position: relative;
+		margin: 0 0 1.8rem 0;
+		padding-left: 2.4rem;
+	}
+
+	.timeline__item:last-child {
+		margin-bottom: 0;
+	}
+
+	.timeline__item::before {
+		content: "";
+		position: absolute;
+		left: 0.2rem;
+		top: 0.35rem;
+		width: 0.9rem;
+		height: 0.9rem;
+		border-radius: 999px;
+		background: var(--primary-color);
+		box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary-color) 18%, transparent);
+	}
+
+	.timeline__date time {
+		font-family: var(--font-mono);
+		font-size: 0.85rem;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: color-mix(in oklab, var(--remark-color) 70%, var(--text-color));
+	}
+
+	.timeline__events {
+		margin: 0.75rem 0 0;
+		padding: 0;
+		list-style: none;
+		display: grid;
+		gap: 0.5rem;
+	}
+
+	.timeline__event {
+		padding: 0.55rem 0.75rem;
+		border-radius: 14px;
+		border: 1px solid color-mix(in oklab, var(--primary-color) 25%, transparent);
+		background: color-mix(in oklab, var(--background-color) 95%, var(--primary-color) 5%);
+		font-size: 0.95rem;
+		line-height: 1.45;
+	}
+
+	.timeline__event del {
+		opacity: 0.7;
+	}
+
+	.timeline__empty {
+		margin: 0;
+		color: var(--remark-color);
+	}
+
+	@media (max-width: 640px) {
+		.about__hero {
+			grid-template-columns: 1fr;
+		}
+
+		.about__hero-main {
+			gap: 0.85rem;
+		}
+
+		.about__hero-actions {
+			width: 100%;
+		}
+
+		.about-button {
+			justify-content: center;
+			flex: 1;
+		}
+
+		.timeline::before {
+			left: 0.5rem;
+		}
+
+		.timeline__item {
+			padding-left: 2rem;
+		}
+
+		.timeline__item::before {
+			left: -0.05rem;
+		}
+	}
+</style>

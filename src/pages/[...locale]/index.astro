@@ -6,7 +6,6 @@ import { Icon } from "astro-icon/components";
 import Time from "$utils/time";
 import Base from "$layouts/Base.astro";
 import Heatmap from "$components/Heatmap.svelte";
-import config from "$config";
 import i18nit from "$i18n";
 
 export async function getStaticPaths() {
@@ -18,42 +17,32 @@ const { locale = i18n!.defaultLocale } = Astro.params;
 
 const t = i18nit(locale);
 
-// Get preface content for current locale, sorted by timestamp (newest first)
 const prefaces = (
 	await getCollection("preface", preface => {
-		// Extract language and ID from file path structure
 		const [language, id] = preface.id.split("/");
 		preface.id = id;
-
-		// Filter by current locale
 		return language == locale;
 	})
 ).sort((a, b) => b.data.timestamp.getTime() - a.data.timestamp.getTime());
 
-// Get published notes for current locale, sorted by timestamp (newest first)
 const notes = (
 	await getCollection("note", note => {
-		// Extract language and note ID from file path structure
 		const [language] = note.id.split("/");
-
-		// Filter published notes by current locale
 		return !note.data.draft && language == locale;
 	})
 ).sort((a, b) => b.data.timestamp.getTime() - a.data.timestamp.getTime());
 
-// Get published jottings for current locale
-const jottings = await getCollection("jotting", jotting => {
-	// Extract language and jotting ID from file path structure
-	const [language] = jotting.id.split("/");
-
-	// Filter published jottings by current locale
-	return !jotting.data.draft && language == locale;
-});
+const jottings = (
+	await getCollection("jotting", jotting => {
+		const [language] = jotting.id.split("/");
+		return !jotting.data.draft && language == locale;
+	})
+).sort((a, b) => b.data.timestamp.getTime() - a.data.timestamp.getTime());
 
 // Get the most recent note and preface for display
-const newest = notes[0];
+const latestNote = notes[0];
+const latestJotting = jottings[0];
 const preface = prefaces[0];
-// Render preface content if available, otherwise use empty object
 const { Content } = preface ? await render(preface) : ({} as any);
 
 const formatTitle = (raw: unknown): string[] => {
@@ -62,62 +51,462 @@ const formatTitle = (raw: unknown): string[] => {
 	return text.split(/\n+/).map(line => line.trim()).filter(Boolean);
 };
 
-const newestTitleLines = newest ? formatTitle(newest.data.title) : [];
+const latestNoteTitleLines = latestNote ? formatTitle(latestNote.data.title) : [];
+const latestJottingTitleLines = latestJotting ? formatTitle(latestJotting.data.title) : [];
+
+const toIso = (value: Date | string) => (value instanceof Date ? value : new Date(value)).toISOString();
 ---
 
 <Base title={t("navigation.home")} {locale}>
-	<main class="flex flex-col gap-5 sm:gap-20 flex-grow">
-		<header class="flex items-center justify-center flex-wrap-reverse grow-0.6">
-			{config.prologue && <article class="mr-a font-cursive font-thin text-size-xl sm:text-size-2xl line-height-loose whitespace-pre-line">{config.prologue}</article>}
-			<Icon name="site-logo" size={100} is:inline />
-		</header>
-
-		{
-			preface && (
-				<section class="flex flex-col">
-					<article class="markdown">
-						<Content />
-					</article>
-					<a href={getRelativeLocaleUrl(locale, "/preface")} class="self-end my-2 text-size-sm c-secondary">
-						—— {Time.date.locale(preface.data.timestamp, locale)}
+	<main class="home">
+		<section class="hero">
+			<div class="hero__content">
+				<span class="hero__eyebrow">{t("home.hero.eyebrow")}</span>
+				<h1 class="hero__title">{t("home.hero.title")}</h1>
+				<p class="hero__description">{t("home.hero.description")}</p>
+				<div class="hero__actions">
+					<a class="hero__action hero__action--primary" href={getRelativeLocaleUrl(locale, "/note")}>
+						<Icon name="lucide:list" is:inline size={18} />
+						{t("home.hero.actions.notes")}
 					</a>
-				</section>
-			)
-		}
+					<a class="hero__action hero__action--outline" href={getRelativeLocaleUrl(locale, "/jotting")}>
+						<Icon name="lucide:feather" is:inline size={18} />
+						{t("home.hero.actions.jottings")}
+					</a>
+					<a class="hero__action hero__action--ghost" href={getRelativeLocaleUrl(locale, "/feed.xml")}>
+						<Icon name="lucide:rss" is:inline size={18} />
+						{t("home.hero.actions.rss")}
+					</a>
+				</div>
+				<ul class="hero__signals">
+					<li>🔍 {t("home.hero.info.search")}</li>
+					<li>📡 {t("home.hero.info.rss")}</li>
+				</ul>
+				<div class="hero__stats">
+					<div>
+						<span>{notes.length}</span>
+						<small>{t("home.hero.stats.notes", { count: notes.length })}</small>
+					</div>
+					<div>
+						<span>{jottings.length}</span>
+						<small>{t("home.hero.stats.jottings", { count: jottings.length })}</small>
+					</div>
+				</div>
+			</div>
+			<div class="hero__visual">
+				<Heatmap {locale} {notes} {jottings} />
+			</div>
+		</section>
 
-		{
-			newest && (
-				<footer class="flex items-center justify-center flex-wrap-reverse gap-10">
-					<Heatmap {locale} {notes} {jottings} />
+		{preface && (
+			<section class="preface">
+				<header class="preface__header">
+					<span>{t("home.preface.title")}</span>
+					<time datetime={toIso(preface.data.timestamp)}>{Time.date.locale(preface.data.timestamp, locale)}</time>
+				</header>
+				<article class="preface__body markdown">
+					<Content />
+				</article>
+				<a class="preface__cta" href={getRelativeLocaleUrl(locale, "/preface")}>
+					{t("home.preface.cta")} →
+				</a>
+			</section>
+		)}
 
-					<blockquote class="flex-grow">
-						<h3>{t("home.newest")}</h3>
-						<div class="flex flex-col sm:flex-row justify-between gap-2 mt-2">
-							<a href={getRelativeLocaleUrl(locale, `/note/${newest.id.split("/").slice(1).join("/")}`)} class="link flex flex-col gap-1">
-								{newest.data.series && <span class="text-size-sm font-semibold c-secondary uppercase tracking-wide">{newest.data.series}</span>}
-								{newestTitleLines.map(line => (
+		<section class="latest">
+			<header class="section-header">
+				<h2>{t("home.latest.title")}</h2>
+				<p>{t("home.latest.subtitle")}</p>
+			</header>
+			{latestNote || latestJotting ? (
+				<div class="latest__grid">
+					{latestNote && (
+						<article class="latest-card">
+							<header class="latest-card__header">
+								<Icon name="lucide:book-open" is:inline size={18} />
+								<span>{t("home.latest.note")}</span>
+							</header>
+							<a class="latest-card__title" href={getRelativeLocaleUrl(locale, `/note/${latestNote.id.split("/").slice(1).join("/")}`)}>
+								{latestNote.data.series && <span class="latest-card__series">{latestNote.data.series}</span>}
+								{latestNoteTitleLines.map(line => (
 									<span class="title-line">{line}</span>
 								))}
 							</a>
-							<div class="flex gap-1 flex-wrap content-start">
-								{newest.data.tags?.map(tag => (
-									<span class="c-remark text-size-sm">#{tag}</span>
+							{latestNote.data.description && <p class="latest-card__description">{latestNote.data.description}</p>}
+							<footer class="latest-card__meta">
+								<time datetime={toIso(latestNote.data.timestamp)}>{Time.date.locale(latestNote.data.timestamp, locale)}</time>
+								{latestNote.data.tags?.length && (
+									<ul class="latest-card__tags">
+										{latestNote.data.tags.slice(0, 4).map(tag => (
+											<li>#{tag}</li>
+										))}
+									</ul>
+								)}
+							</footer>
+						</article>
+					)}
+					{latestJotting && (
+						<article class="latest-card">
+							<header class="latest-card__header">
+								<Icon name="lucide:pen-square" is:inline size={18} />
+								<span>{t("home.latest.jotting")}</span>
+							</header>
+							<a class="latest-card__title" href={getRelativeLocaleUrl(locale, `/jotting/${latestJotting.id.split("/").slice(1).join("/")}`)}>
+								{latestJottingTitleLines.map(line => (
+									<span class="title-line">{line}</span>
 								))}
-							</div>
-						</div>
-						<time title={Time.full(newest.data.timestamp)} class="c-remark font-mono text-xs">
-							{Time(newest.data.timestamp)}
-						</time>
-					</blockquote>
-				</footer>
-			)
-		}
+							</a>
+							{latestJotting.data.description && <p class="latest-card__description">{latestJotting.data.description}</p>}
+							<footer class="latest-card__meta">
+								<time datetime={toIso(latestJotting.data.timestamp)}>{Time.date.locale(latestJotting.data.timestamp, locale)}</time>
+								{latestJotting.data.tags?.length && (
+									<ul class="latest-card__tags">
+										{latestJotting.data.tags.slice(0, 4).map(tag => (
+											<li>#{tag}</li>
+										))}
+									</ul>
+								)}
+							</footer>
+						</article>
+					)}
+				</div>
+			) : (
+				<p class="latest__empty">{t("home.latest.empty")}</p>
+			)}
+		</section>
+
+		<section class="rss-callout">
+			<header>
+				<h2>{t("home.rss.title")}</h2>
+				<p>{t("home.rss.description")}</p>
+			</header>
+			<div class="rss-callout__body">
+				<div class="rss-callout__feeds">
+					<span class="rss-callout__label">{t("home.rss.feeds")}</span>
+					<div class="rss-callout__links">
+						<a href={getRelativeLocaleUrl(locale, "/feed.xml")} target="_blank" rel="noopener">{t("home.rss.atom")}</a>
+						<a href={getRelativeLocaleUrl(locale, "/feed.rss")} target="_blank" rel="noopener">{t("home.rss.rss")}</a>
+						<a href={getRelativeLocaleUrl(locale, "/feed.json")} target="_blank" rel="noopener">{t("home.rss.json")}</a>
+					</div>
+				</div>
+				<p class="rss-callout__hint">{t("home.rss.hint")}</p>
+				<br>
+				<a class="hero__action hero__action--primary" href={getRelativeLocaleUrl(locale, "/feed.xml")} target="_blank" rel="noopener">
+					<Icon name="lucide:rss" is:inline size={18} />
+					{t("home.rss.button")}
+				</a>
+			</div>
+		</section>
 	</main>
 </Base>
 
 <style>
+	.home {
+		display: flex;
+		flex-direction: column;
+		gap: clamp(2rem, 3vw, 3.5rem);
+		padding-bottom: clamp(2rem, 4vw, 4rem);
+	}
+
+	.hero {
+		display: grid;
+		gap: clamp(2rem, 3vw, 3rem);
+		align-items: center;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		border: 1px solid color-mix(in oklab, var(--primary-color) 30%, transparent);
+		border-radius: 22px;
+		padding: clamp(1.5rem, 4vw, 3rem);
+		background: linear-gradient(150deg, color-mix(in oklab, var(--primary-color) 14%, transparent) 0%, transparent 60%);
+	}
+
+	.hero__content {
+		display: flex;
+		flex-direction: column;
+		gap: 1.1rem;
+	}
+
+	.hero__eyebrow {
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		font-size: 0.75rem;
+		color: color-mix(in oklab, var(--primary-color) 65%, var(--text-color));
+	}
+
+	.hero__title {
+		font-size: clamp(2.2rem, 5vw, 3.4rem);
+		line-height: 1.05;
+		margin: 0;
+	}
+
+	.hero__description {
+		font-size: clamp(1rem, 2vw, 1.2rem);
+		color: var(--remark-color);
+		max-width: 46ch;
+	}
+
+	.hero__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+
+	.hero__action {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.6rem 1.1rem;
+		border-radius: 999px;
+		font-weight: 600;
+		font-size: 0.95rem;
+		border: 1px solid transparent;
+		transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+	}
+
+	.hero__action--primary {
+		background: var(--primary-color);
+		color: var(--background-color);
+	}
+
+	.hero__action--outline {
+		border-color: color-mix(in oklab, var(--primary-color) 50%, transparent);
+	}
+
+	.hero__action--ghost {
+		color: var(--primary-color);
+		background: color-mix(in oklab, var(--primary-color) 10%, transparent);
+	}
+
+	.hero__action:hover {
+		transform: translateY(-1px);
+		border-color: var(--primary-color);
+	}
+
+	.hero__signals {
+		display: grid;
+		gap: 0.4rem;
+		font-size: 0.9rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		color: var(--remark-color);
+	}
+
+	.hero__stats {
+		display: flex;
+		gap: 1.5rem;
+	}
+
+	.hero__stats div {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+	}
+
+	.hero__stats span {
+		font-size: 1.8rem;
+		font-weight: 700;
+	}
+
+	.hero__stats small {
+		color: var(--remark-color);
+		font-size: 0.85rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+
+	.hero__visual {
+		border-radius: 18px;
+		background: color-mix(in oklab, var(--background-color) 96%, var(--primary-color) 4%);
+		border: 1px solid color-mix(in oklab, var(--primary-color) 20%, transparent);
+		padding: clamp(1rem, 3vw, 1.75rem);
+	}
+
+	.preface {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		padding: clamp(1.2rem, 3vw, 1.8rem);
+		border-radius: 20px;
+		border: 1px solid color-mix(in oklab, var(--primary-color) 18%, transparent);
+		background: color-mix(in oklab, var(--background-color) 96%, var(--primary-color) 4%);
+	}
+
+	.preface__header {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		font-size: 0.9rem;
+		color: var(--remark-color);
+	}
+
+	.preface__cta {
+		align-self: flex-end;
+		font-weight: 600;
+		color: var(--primary-color);
+	}
+
+	.section-header {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		margin-bottom: 1.2rem;
+	}
+
+	.section-header h2 {
+		margin: 0;
+		font-size: clamp(1.6rem, 3vw, 2.1rem);
+	}
+
+	.section-header p {
+		margin: 0;
+		color: var(--remark-color);
+	}
+
+	.latest__grid {
+		display: grid;
+		gap: clamp(1rem, 2vw, 1.6rem);
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	}
+
+	.latest-card {
+		display: flex;
+		flex-direction: column;
+		gap: 0.8rem;
+		padding: 1.4rem;
+		border-radius: 16px;
+		border: 1px solid color-mix(in oklab, var(--primary-color) 15%, transparent);
+		background: var(--block-color);
+		box-shadow: 0 12px 30px #00000015;
+	}
+
+	.latest-card__header {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		font-size: 0.75rem;
+		letter-spacing: 0.1em;
+		color: var(--remark-color);
+	}
+
+	.latest-card__title {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.latest-card__title:hover {
+		color: var(--primary-color);
+	}
+
+	.latest-card__series {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--remark-color);
+	}
+
 	.title-line {
 		display: block;
-		line-height: 1.15;
+		font-size: 1.1rem;
+		font-weight: 650;
+		line-height: 1.2;
+	}
+
+	.latest-card__description {
+		margin: 0;
+		color: var(--remark-color);
+		font-size: 0.95rem;
+	}
+
+	.latest-card__meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		gap: 0.75rem;
+		font-size: 0.8rem;
+		color: var(--remark-color);
+	}
+
+	.latest-card__tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.latest-card__tags li {
+		border: 1px solid color-mix(in oklab, var(--primary-color) 40%, transparent);
+		border-radius: 999px;
+		padding: 0.15rem 0.45rem;
+	}
+
+	.latest__empty {
+		color: var(--remark-color);
+	}
+
+	.rss-callout {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		padding: clamp(1.5rem, 3vw, 2.5rem);
+		border-radius: 24px;
+		border: 1px dashed color-mix(in oklab, var(--primary-color) 30%, transparent);
+		background: color-mix(in oklab, var(--background-color) 92%, var(--primary-color) 8%);
+	}
+
+	.rss-callout__feeds {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		align-items: center;
+	}
+
+	.rss-callout__label {
+		font-weight: 600;
+		font-size: 0.85rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+
+	.rss-callout__links {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.rss-callout__links a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		border: 1px solid color-mix(in oklab, var(--primary-color) 40%, transparent);
+		border-radius: 999px;
+		padding: 0.35rem 0.75rem;
+	}
+
+	.rss-callout__links a:hover {
+		background: color-mix(in oklab, var(--primary-color) 12%, transparent);
+	}
+
+	.rss-callout__hint {
+		margin: 0;
+		color: var(--remark-color);
+		font-size: 0.9rem;
+	}
+
+	@media (max-width: 640px) {
+		.hero__stats {
+			gap: 1rem;
+		}
+
+		.latest-card__meta {
+			flex-direction: column;
+			align-items: flex-start;
+		}
 	}
 </style>

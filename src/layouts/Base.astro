@@ -5,7 +5,6 @@ import { Icon } from "astro-icon/components";
 import config from "$config";
 import App from "$layouts/App.astro";
 import Navigator from "$layouts/header/Navigator.svelte";
-import Search from "$components/Search.svelte";
 import Footer from "$layouts/Footer.astro";
 import Tip from "$components/Tip.svelte";
 import MermaidClient from "$components/MermaidClient.svelte";
@@ -43,9 +42,6 @@ const title = config.title;
 		<div id="body" class="flex flex-col min-h-screen">
 			<header class="sticky top-0 flex items-center justify-between gap-3 pt-3 pb-1 mb-4 bg-background z-2 sm:(static pb-12)">
 				<a href={getRelativeLocaleUrl(locale)} class="text-size-lg sm:text-size-2xl font-bold">{title}</a>
-
-				<div class="flex items-center gap-2">
-					<Search {locale} client:load />
 					<Navigator {locale} {route} client:load>
 						<Icon name="lucide:tent" slot="home" is:inline />
 						<Icon name="lucide:list" slot="note" />
@@ -58,7 +54,6 @@ const title = config.title;
 						<Icon name="lucide:align-justify" slot="bars" />
 						<Icon name="lucide:x" slot="close" is:inline />
 					</Navigator>
-				</div>
 			</header>
 
 			<slot />

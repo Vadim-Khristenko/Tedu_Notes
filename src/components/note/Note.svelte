@@ -31,6 +31,16 @@
 		align-items: center;
 	}
 
+	.note-quicksearch {
+		border: 1px solid var(--weak-color);
+		border-radius: 10px;
+		padding: 8px 12px;
+		background: transparent;
+		color: var(--text-color);
+		min-width: 300px;
+		max-width: 420px;
+	}
+
 	.active-chip {
 		display: inline-flex;
 		align-items: center;
@@ -296,6 +306,7 @@
 				{/if}
 			</div>
 			<div class="note-toolbar__filters">
+				<input class="note-quicksearch" type="search" placeholder={t("search.placeholder") ?? "Поиск…"} bind:value={q} />
 				<span class="text-3.5 c-remark">{filtered.length} / {notes.length}</span>
 				{#if hasFilters()}
 					<button class="clear-filters" type="button" onclick={clearFilters}>{t("search.clear") ?? "Clear"}</button>
@@ -412,12 +423,17 @@ function formatTitle(raw: unknown): string[] {
 	return text.split(/\n+/).map(line => line.trim()).filter(Boolean);
 }
 
+let q: string = $state("");
 let filtered: any[] = $derived.by(() => {
+	const lower = q.trim().toLowerCase();
 	const filteredNotes = notes
 		.filter(note => {
+			const matchQuery = !lower
+				|| String(note.data.title ?? "").toLowerCase().includes(lower)
+				|| String(note.data.description ?? "").toLowerCase().includes(lower);
 			const matchSeries = !series || note.data.series === series;
 			const matchTags = tags.every(tag => note.data.tags?.includes(tag));
-			return matchSeries && matchTags;
+			return matchQuery && matchSeries && matchTags;
 		})
 		.sort((a, b) => b.data.top - a.data.top || b.data.timestamp.getTime() - a.data.timestamp.getTime());
 
@@ -426,6 +442,7 @@ let filtered: any[] = $derived.by(() => {
 		if (page > 1) query.set("page", String(page));
 		if (series) query.set("series", series);
 		tags.forEach(tag => query.append("tag", tag));
+		if (q.trim()) query.set("q", q.trim());
 
 		const search = query.toString();
 		const url = getRelativeLocaleUrl(locale, `/note${search ? `?${search}` : ""}`);
@@ -470,6 +487,7 @@ onMount(() => {
 	page = Number(params.get("page")) || 1;
 	series = params.get("series");
 	tags = params.getAll("tag");
+	q = params.get("q") ?? "";
 
 	initial = true;
 });

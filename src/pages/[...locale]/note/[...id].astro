@@ -68,6 +68,12 @@ function formatTitle(raw: unknown, splitEnabled = true): string[] {
 const titleSplitEnabled: boolean = note.data?.title_split === false ? false : true;
 const titleLines: string[] = formatTitle(note.data.title, titleSplitEnabled);
 
+// Optional last-updated timestamp (may be in data or frontmatter)
+const lastUpdatedTimestamp: string | undefined = note.data?.last_updated_timestamp ?? (frontmatter as any)?.last_updated_timestamp;
+const lastUpdated: Date | undefined = lastUpdatedTimestamp ? new Date(lastUpdatedTimestamp) : undefined;
+const lastUpdatedText: string | undefined = lastUpdated ? Time(lastUpdated) : undefined;
+const lastUpdatedFull: string | undefined = lastUpdated ? Time.full(lastUpdated) : undefined;
+
 // Generate breadcrumbs
 let localePrefix = locale === i18n?.defaultLocale ? '' : `/${locale}`;
 if (localePrefix === '/ru') { localePrefix = ''; } // Russian is default locale
@@ -99,7 +105,7 @@ const structuredData = {
 	},
 	"publisher": {
 		"@type": "Organization",
-		"name": "T-EDU Notes",
+		"name": "TEDU Notes",
 		"logo": {
 			"@type": "ImageObject",
 			"url": "https://tedu-notes.ru/favicon.svg"
@@ -134,65 +140,77 @@ const structuredData = {
 			))}
 		</nav>
 
-		<header class="flex flex-col gap-4">
+		<header class="note-hero">
 			<style>
-				.title-line { display: block; line-height: 1.1; }
+				.title-line { display: block; line-height: 1.05; }
 			</style>
-			<h1 class="text-3xl">
-				{titleLines.map(line => (
-					<span class="title-line">{line}</span>
-				))}
-			</h1>
-			<div class="flex flex-col gap-3 sm:flex-row children:(flex items-center gap-1 text-3.5 c-secondary)">
-				<time title={Time.full(note.data.timestamp)} datetime={note.data.timestamp.toISOString()}>
-					<Icon name="lucide:calendar" />
-					{Time(note.data.timestamp)}
-				</time>
-				{
-					note.data.series && (
-						<span>
-							<Icon name="lucide:layers" />
-							{note.data.series}
-						</span>
-					)
-				}
-				{
-					note.data.tags?.length && (
-						<span>
-							<Icon name="lucide:hash" />
-							{note.data.tags?.join("; ")}
-						</span>
-					)
-				}
-				<span>
-					<Icon name="lucide:pilcrow" />
-					{t("read.words", { words: frontmatter.words })}
-				</span>
-				<span>
-					<Icon name="lucide:clock" />
-					{Math.ceil(frontmatter.words / 200)} {t("read.minutes")}
-				</span>
+			<div class="note-hero-inner">
+				<div class="note-hero-top">
+					{note.data.series && (
+						<span class="series-badge"><Icon name="lucide:layers" /> {note.data.series}</span>
+					)}
+
+					<h1 class="note-h1">
+						{titleLines.map(line => (
+							<span class="title-line">{line}</span>
+						))}
+					</h1>
+				</div>
+
+				{note.data.description && <p class="note-excerpt">{note.data.description}</p>}
+
+				<div class="note-meta-row warm">
+					<time class="meta-item" title={Time.full(note.data.timestamp)} datetime={note.data.timestamp.toISOString()}>
+						<Icon name="lucide:calendar" />
+						<span>{t('meta.created', { text: Time(note.data.timestamp) })}</span>
+					</time>
+
+					{lastUpdated && (
+						<time class="meta-item meta-updated" title={lastUpdatedFull}>
+							<Icon name="lucide:refresh-ccw" />
+							<span>{t('meta.updated', { text: lastUpdatedText! })}</span>
+						</time>
+					)}
+
+					{note.data.tags?.length && (
+						<div class="tags">
+							{note.data.tags.map(tag => (
+								<span class="tag-chip">{tag}</span>
+							))}
+						</div>
+					)}
+
+					<div class="meta-item">
+						<Icon name="lucide:pilcrow" />
+						<span>{t("read.words", { integer: frontmatter.words })}</span>
+					</div>
+
+					<div class="meta-item">
+						<Icon name="lucide:clock" />
+						<span>{Math.ceil(frontmatter.words / 200)} {t("read.minutes")}</span>
+					</div>
+				</div>
 			</div>
-			<hr class="b-b b-b-solid b-weak" />
 		</header>
 
 		<Sensitive {locale} back="/note" sensitive={note.data.sensitive} client:load>
-			<div class="flex gap-5">
-				<section id="markdown-content" class="markdown">
+			<div class="note-layout">
+				<main class="note-main markdown" id="markdown-content">
 					<Content />
-				</section>
-				{
-					note.data.contents && (
-						<aside class="hidden sm:(block flex-shrink-0 w-200px)">
-							<div class="sticky top-3 flex flex-col gap-2">
+				</main>
+
+				{note.data.contents && (
+					<aside class="note-toc">
+						<div class="sticky top-3 note-toc-inner">
+							<div class="toc-header">
 								<h3>{t("note.contents")}</h3>
-								<nav class="overflow-y-auto max-h-80vh">
-									<TOC headings={table_of_contents} />
-								</nav>
 							</div>
-						</aside>
-					)
-				}
+							<nav class="toc-nav">
+								<TOC headings={table_of_contents} />
+							</nav>
+						</div>
+					</aside>
+				)}
 			</div>
 		</Sensitive>
 
@@ -308,4 +326,66 @@ const structuredData = {
 .share-btn--telegram:hover { background: #1b8fc5; transform: translateY(-2px); }
 .share-btn--linkedin { background: #0077B5; }
 .share-btn--linkedin:hover { background: #005f95; transform: translateY(-2px); }
+/* Small helper for accessible text only visible to screen readers */
+.sr-only {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0,0,0,0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+.note-hero {
+	border-radius: 12px;
+	padding: clamp(1rem, 3vw, 2rem);
+	background: linear-gradient(90deg, color-mix(in oklab, var(--primary-color) 6%, transparent), transparent 60%);
+	box-shadow: 0 10px 30px rgba(2,6,23,0.04);
+}
+
+.note-hero-inner { max-width: 1100px; margin: 0 auto; }
+.note-hero-top { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+.series-badge { display:inline-flex; gap:0.5rem; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; background: color-mix(in oklab, var(--primary-color) 10%, transparent); border:1px solid color-mix(in oklab, var(--primary-color) 18%, transparent); font-weight:600; }
+.note-h1 { margin:0; font-size:clamp(1.8rem,4.6vw,3rem); }
+.note-excerpt { margin:0.5rem 0 0; color:var(--remark-color); font-size:1rem; }
+
+.note-meta-row { display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap; margin-top:0.75rem; }
+.meta-item { display:inline-flex; gap:0.5rem; align-items:center; padding:0.3rem 0.6rem; border-radius:999px; background: color-mix(in oklab, var(--background-color) 96%, var(--primary-color) 2%); border:1px solid color-mix(in oklab, var(--primary-color) 12%, transparent); font-size:0.95rem; }
+.meta-updated { background: color-mix(in oklab, var(--primary-color) 8%, transparent); }
+
+/* Tag container spacing to avoid chips sticking together */
+.tags { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
+.tag-chip { padding:0.2rem 0.5rem; border-radius:999px; background: color-mix(in oklab, var(--primary-color) 6%, transparent); border:1px solid color-mix(in oklab, var(--primary-color) 14%, transparent); }
+
+.note-layout { display:grid; grid-template-columns: 1fr 260px; gap:1.25rem; align-items:start; }
+.note-main { max-width:1100px; }
+.note-toc { display:block; }
+.note-toc-inner { padding-left:0.5rem; }
+.toc-header h3 { margin:0 0 0.5rem 0; font-size:1rem; }
+.toc-nav { max-height: 72vh; overflow:auto; }
+
+/* Content niceties */
+.note-main p { font-size:1.05rem; line-height:1.75; }
+.note-main blockquote { border-left:3px solid color-mix(in oklab, var(--primary-color) 28%, transparent); padding:0.6rem 0.9rem; background: color-mix(in oklab, var(--background-color) 96%, var(--primary-color) 2%); border-radius:8px; }
+.note-main pre { border-radius:10px; overflow:auto; box-shadow: 0 10px 30px rgba(2,6,23,0.04); }
+.note-main table { width:100%; border-collapse:collapse; }
+.note-main th, .note-main td { border:1px solid color-mix(in oklab, var(--primary-color) 8%, transparent); padding:0.5rem; }
+
+/* Callout blocks from admonitions */
+.callout { padding:0.8rem 1rem; border-radius:10px; margin:0.9rem 0; display:flex; gap:0.75rem; align-items:flex-start; }
+.callout--info { background: color-mix(in oklab, var(--primary-color) 6%, transparent); border:1px solid color-mix(in oklab, var(--primary-color) 14%, transparent); }
+.callout--tip { background: color-mix(in oklab, #00c853 6%, transparent); border:1px solid color-mix(in oklab, #00c853 14%, transparent); }
+.callout--warn { background: color-mix(in oklab, #ffb300 6%, transparent); border:1px solid color-mix(in oklab, #ffb300 14%, transparent); }
+
+/* Reading progress bar fallback styling kept earlier */
+.share-btn { display:inline-flex; align-items:center; justify-content:center; gap:0.5rem; width:40px; height:36px; border-radius:8px; color:var(--background-color); transition: transform 0.12s ease, background-color 0.12s ease; }
+.share-btn--twitter { background:#1DA1F2; }
+.share-btn--twitter:hover { background:#0d8ae6; transform:translateY(-2px); }
+.share-btn--telegram { background:#26A5E4; }
+.share-btn--telegram:hover { background:#1b8fc5; transform:translateY(-2px); }
+.share-btn--linkedin { background:#0077B5; }
+.share-btn--linkedin:hover { background:#005f95; transform:translateY(-2px); }
 </style>

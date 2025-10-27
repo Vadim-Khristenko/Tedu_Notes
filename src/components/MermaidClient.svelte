@@ -251,7 +251,7 @@
     }
 
     zoomOutBtn.addEventListener('click', () => {
-      currentScale = Math.max(0.5, currentScale - 0.1);
+      currentScale = Math.max(0.25, currentScale - 0.1);
       updateZoom(currentScale);
     });
 
@@ -261,7 +261,7 @@
     });
 
     zoomInBtn.addEventListener('click', () => {
-      currentScale = Math.min(2, currentScale + 0.1);
+      currentScale = Math.min(3, currentScale + 0.1);
       updateZoom(currentScale);
     });
 

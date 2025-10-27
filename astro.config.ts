@@ -185,6 +185,7 @@ export default defineConfig({
           "pen-square",
           "pilcrow",
           "refresh-cw",
+          "refresh-ccw",
           "reply",
           "rss",
           "scale",

@@ -5,59 +5,82 @@ const { headings } = Astro.props;
 ---
 
 <style lang="less">
-	ul {
-		margin-left: 1rem;
+ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 0.95rem;
 
-		font-size: 0.9rem;
-		list-style: none;
-
-		a {
-			color: var(--weak-color);
-			line-height: 1.5;
-
-			transition:
-				color 0.15s ease-in-out,
-				font-weight 0.15s ease-in-out;
-
-			&:hover,
-			&:is(li.indicate > a) {
-				font-weight: bold;
-				color: var(--primary-color);
-			}
-		}
-
-		li {
-			position: relative;
-
-			&::before {
-				content: "";
-				position: absolute;
-				top: -0.2rem;
-				left: -0.5rem;
-				height: 100%;
-				border-left: 1px solid var(--remark-color);
-			}
-
-			&:last-child {
-				&::before {
-					height: 1rem;
-				}
-			}
-
-			&::after {
-				content: "";
-				position: absolute;
-				top: 0.8rem;
-				left: -0.5rem;
-				border-bottom: 1px solid var(--remark-color);
-				width: 5px;
-			}
-		}
-
-		ul {
-			margin-top: 0.2rem;
-		}
+	a {
+		display: inline-block;
+		color: var(--weak-color);
+		line-height: 1.6;
+		padding: 0.22rem 0.4rem;
+		border-radius: 6px;
+		transition: color 0.15s ease, background-color 0.12s ease, transform 0.12s ease;
 	}
+
+	a:hover,
+	& > li.indicate > a {
+		color: var(--primary-color);
+		background: color-mix(in oklab, var(--primary-color) 6%, transparent);
+		transform: translateX(3px);
+		font-weight: 600;
+	}
+
+	li {
+		position: relative;
+		margin: 0.18rem 0;
+		padding-left: 1.35rem;
+
+		&::before {
+			/* small dot marker */
+			content: "";
+			position: absolute;
+			left: 0.4rem;
+			top: 0.9rem;
+			transform: translateY(-50%);
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background: color-mix(in oklab, var(--remark-color) 55%, transparent);
+			transition: transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+		}
+
+		&.indicate::before {
+			transform: scale(1.25) translateY(-50%);
+			background: var(--primary-color);
+			box-shadow: 0 4px 14px color-mix(in oklab, var(--primary-color) 30%, transparent);
+		}
+
+		/* vertical line for nested structure */
+		&::after {
+			content: "";
+			position: absolute;
+			left: 0.75rem;
+			top: 1.6rem;
+			bottom: 0.15rem;
+			width: 2px;
+			background: linear-gradient(to bottom, color-mix(in oklab, var(--remark-color) 40%, transparent), transparent);
+			opacity: 0.6;
+			border-radius: 2px;
+		}
+
+		&:last-child::after { bottom: 0.9rem; }
+	}
+
+	/* nested lists: slightly indented and lighter spacing */
+	ul {
+		margin-top: 0.25rem;
+		margin-left: 0.25rem;
+		padding-left: 0;
+	}
+
+	a:focus {
+		outline: 2px solid color-mix(in oklab, var(--primary-color) 18%, transparent);
+		outline-offset: 2px;
+	}
+}
 </style>
 
 <ul>

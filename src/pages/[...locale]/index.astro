@@ -85,11 +85,11 @@ const toIso = (value: Date | string) => (value instanceof Date ? value : new Dat
 				<div class="hero__stats">
 					<div>
 						<span>{notes.length}</span>
-						<small>{t("home.hero.stats.notes", { count: notes.length })}</small>
+						<small>{t("home.hero.stats.notes", { integer: notes.length })}</small>
 					</div>
 					<div>
 						<span>{jottings.length}</span>
-						<small>{t("home.hero.stats.jottings", { count: jottings.length })}</small>
+						<small>{t("home.hero.stats.jottings", { integer: jottings.length })}</small>
 					</div>
 				</div>
 			</div>

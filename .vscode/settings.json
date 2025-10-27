@@ -9,5 +9,6 @@
 			],
 			"url": ".vscode/site.schema.json"
 		}
-	]
+	],
+	"i18n-ally.keystyle": "nested"
 }

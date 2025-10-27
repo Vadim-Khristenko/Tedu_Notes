@@ -8,7 +8,7 @@
 				<time class="font-bold">{Time.date.locale(day.date, locale)}</time>
 				{#if number > 0}
 					{#if day.notes.length > 0}
-						<p class="my-1">{t("home.heatmap.note", { count: day.notes.length })}：</p>
+						<p class="my-1">{t("home.heatmap.note", { integer: day.notes.length })}：</p>
 						<ul class="flex flex-col gap-0.5">
 							{#each day.notes as note}
 								<a href={getRelativeLocaleUrl(locale, `/note/${note.id.split("/").slice(1).join("/")}`)} aria-label={note.data.title} class="ml-1 link">
@@ -21,7 +21,7 @@
 						</ul>
 					{/if}
 					{#if day.jottings.length > 0}
-						<p class="my-1">{t("home.heatmap.jotting", { count: day.jottings.length })}：</p>
+						<p class="my-1">{t("home.heatmap.jotting", { integer: day.jottings.length })}：</p>
 						<ul class="flex flex-col gap-0.5">
 							{#each day.jottings as jotting}
 								<a href={getRelativeLocaleUrl(locale, `/jotting/${jotting.id.split("/").slice(1).join("/")}`)} aria-label={jotting.data.title} class="ml-1 link">

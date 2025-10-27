@@ -42,35 +42,89 @@ const titleLines: string[] = formatTitle(jotting.data.title, titleSplitEnabled);
 ---
 
 <Base title={jotting.data.title} {locale} description={jotting.data.description} article={{ timestamp: jotting.data.timestamp, tags: jotting.data.tags }}>
-	<main class="flex flex-col gap-6">
-		<header class="flex flex-col gap-4">
-			<style>
-				.title-line { display: block; line-height: 1.1; }
-			</style>
-			<h1 class="text-3xl">
-				{titleLines.map(line => (
-					<span class="title-line">{line}</span>
-				))}
-			</h1>
-			<div class="flex flex-col gap-3 sm:flex-row children:(flex items-center gap-1 text-3.5 c-secondary)">
-				<time title={Time.full(jotting.data.timestamp)}><Icon name="lucide:calendar" />{Time(jotting.data.timestamp)}</time>
-				{
-					jotting.data.tags?.length && (
-						<span>
-							<Icon name="lucide:hash" />
-							{jotting.data.tags?.join("; ")}
-						</span>
-					)
-				}
-				<span><Icon name="lucide:pilcrow" />{t("read.words", { words: frontmatter.words })}</span>
+	<main class="note-page">
+		<header class="note-hero">
+			<div class="note-hero-inner">
+				<h1 class="note-title">
+					{titleLines.map(line => (
+						<span class="title-line">{line}</span>
+					))}
+				</h1>
+				{jotting.data.description && <p class="note-lead">{jotting.data.description}</p>}
+
+				<div class="note-meta-row" role="group" aria-label={t('meta.metadata')}>
+					<time class="meta-item" title={Time.full(jotting.data.timestamp)}>
+						<Icon name="lucide:calendar" />
+						<span>{t('meta.created', { text: Time(jotting.data.timestamp) })}</span>
+					</time>
+
+					{jotting.data.last_updated_timestamp && (
+						<time class="meta-item meta-updated" title={Time.full(jotting.data.last_updated_timestamp)}>
+							<Icon name="lucide:refresh-ccw" />
+							<span>{t('meta.updated', { text: Time(jotting.data.last_updated_timestamp) })}</span>
+						</time>
+					)}
+
+					{jotting.data.tags?.length && (
+						<div class="tags">
+							{jotting.data.tags.map(tag => (
+								<span class="tag-chip">{tag}</span>
+							))}
+						</div>
+					)}
+
+					<div class="meta-item">
+						<Icon name="lucide:pilcrow" />
+						<span>{t('read.words', { integer: frontmatter.words })}</span>
+					</div>
+				</div>
 			</div>
-			<hr class="b-b b-b-solid b-weak" />
 		</header>
 
 		<Sensitive {locale} back="/jotting" sensitive={jotting.data.sensitive} client:load>
-			<section id="markdown-content" class="markdown"><Content /></section>
+			<article id="markdown-content" class="note-content markdown"><Content /></article>
 		</Sensitive>
 
-		<Position {locale} />
+		<footer class="note-footer">
+			<Position {locale} />
+		</footer>
 	</main>
-</Base>
+
+	<style lang="less">
+		.note-page {
+			width: 100%;
+			margin: 0 auto;
+			padding: clamp(1rem, 4vw, 3rem) 1rem;
+			display: block;
+		}
+
+		.note-hero {
+			background: linear-gradient(90deg, color-mix(in oklab, var(--primary-color) 6%, transparent), transparent 60%);
+			padding: clamp(1rem, 3vw, 2rem);
+			border-radius: 12px;
+			margin-bottom: 1rem;
+		}
+
+		.note-hero-inner {
+			max-width: 1100px;
+			margin: 0 auto;
+		}
+
+		.note-title { font-size: clamp(1.6rem, 5vw, 3rem); margin: 0 0 0.5rem 0; }
+		.note-lead { margin: 0 0 0.8rem 0; color: var(--remark-color); }
+
+		.note-meta-row { display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap; }
+		.meta-item { display:inline-flex; gap:0.5rem; align-items:center; padding:0.3rem 0.5rem; border-radius:999px; background: color-mix(in oklab, var(--background-color) 96%, var(--primary-color) 2%); border:1px solid color-mix(in oklab, var(--primary-color) 10%, transparent); }
+		.meta-updated { background: color-mix(in oklab, var(--primary-color) 8%, transparent); }
+
+		.note-content { max-width: 1100px; margin: 1rem auto 2rem; }
+		.note-content p { font-size: 1.05rem; line-height:1.7; }
+
+		.tag-chip { padding:0.2rem 0.5rem; border-radius:999px; background: color-mix(in oklab, var(--primary-color) 6%, transparent); border:1px solid color-mix(in oklab, var(--primary-color) 14%, transparent); }
+
+		@media (max-width: 720px) {
+			.note-hero { padding: 1rem; }
+			.note-content { padding: 0 0.25rem; }
+		}
+	</style>
+	</Base>

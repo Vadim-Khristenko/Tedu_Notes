@@ -1,6 +1,7 @@
 ---
 title: "Just NCV Lang: Pseudo-Code That Lives in Notes"
 timestamp: 2025-10-14 17:00:00+03:00  
+last_updated_timestamp: 2025-10-14 21:00:00+03:00
 series: SomeStrangeSeries  
 tags: [Owner, Info]  
 description: My pseudo-code is a hybrid of ideas from different languages, but always visible. Why is it cool? Because it focuses on the essence, not the details.

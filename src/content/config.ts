@@ -35,6 +35,7 @@ const jotting = defineCollection({
 		title: z.string(),								// Jotting title (required)
 		timestamp: z.date(),							// Publication date (required)
 		last_updated_timestamp: z.date().optional(),	// Last updated date
+		groups: z.array(z.string()).optional(),			// Array of group names
 		tags: z.array(z.string()).optional(),			// Array of topic tags
 		description: z.string().optional(),				// Brief description
 		sensitive: z.boolean().default(false),			// Marks content as sensitive

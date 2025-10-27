@@ -39,19 +39,19 @@ home:
       rss: RSS/Atom/JSON feeds ship every update instantly.
     stats:
       notes: 
-        one: '{count} note'
-        many: '{count} notes'
+        one: '{integer} note'
+        many: '{integer} notes'
       jottings: 
-        one: '{count} jotting'
-        many: '{count} jottings'
+        one: '{integer} jotting'
+        many: '{integer} jottings'
   heatmap:
     empty: No words
     jotting: 
-      one: '{count} jotting'
-      many: '{count} jottings'
+      one: '{integer} jotting'
+      many: '{integer} jottings'
     note: 
-      one: '{count} note'
-      many: '{count} notes'
+      one: '{integer} note'
+      many: '{integer} notes'
   newest: Newest Note
   prefaces: Prefaces
   preface:
@@ -108,8 +108,8 @@ pagination:
   page: Page
 read:
   words:
-    one: '{words} word'
-    many: '{words} words'
+    one: '{integer} word'
+    many: '{integer} words'
   minutes: min
 sensitive:
   back: Return to list
@@ -127,14 +127,30 @@ sensitive:
   warning: If this content might affect your mental health, please leave immediately!
 statistics: 
   words:
-    one: 'Wrote {words} word'
-    many: 'Wrote {words} words'
+    one: 'Wrote {integer} word'
+    many: 'Wrote {integer} words'
 theme: 'Theme: ThoughtLite'
 share:
   title: Share
   twitter: Share on X (Twitter)
   linkedin: Share on LinkedIn
   telegram: Share on Telegram
+meta:
+  created: 'Created on {text}'
+  updated: 'Updated on {text}'
+  author: 
+    one: 'Author: {text}'
+    few: 'Authors: {text}'
+  tags: 
+    one: 'Tag: {text}'
+    few: 'Tags: {text}'
+  group:
+    one: 'Group: {text}'
+    many: 'Groups: {text}'
+  series:
+    one: 'Series: {text}'
+    many: 'Series: {text}'
+  metadata: 'Metadata:'
 404:
   title: Page Not Found
   magic_button: Magic!

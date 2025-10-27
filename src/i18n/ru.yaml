@@ -39,23 +39,23 @@ home:
       rss: RSS/Atom/JSON отдают свежие материалы моментально.
     stats:
       notes: 
-        one: '{count} конспект'
-        few: '{count} конспекта'
-        many: '{count} конспектов'
+        one: '{integer} конспект'
+        few: '{integer} конспекта'
+        many: '{integer} конспектов'
       jottings: 
-        one: '{count} заметка'
-        few: '{count} заметки'
-        many: '{count} заметок'
+        one: '{integer} заметка'
+        few: '{integer} заметки'
+        many: '{integer} заметок'
   heatmap:
     empty: Нет записей
     jotting:
-      one: '{count} заметка'
-      few: '{count} заметки'
-      many: '{count} заметок'
+      one: '{integer} заметка'
+      few: '{integer} заметки'
+      many: '{integer} заметок'
     note: 
-      one: '{count} конспект'
-      few: '{count} конспекта'
-      many: '{count} конспектов'
+      one: '{integer} конспект'
+      few: '{integer} конспекта'
+      many: '{integer} конспектов'
   newest: Последнее обновление
   prefaces: Предисловия
   preface:
@@ -112,9 +112,9 @@ pagination:
   page: Страница
 read:
   words:
-    one: '{words} слово'
-    few: '{words} слова'
-    many: '{words} слов'
+    one: '{integer} слово'
+    few: '{integer} слова'
+    many: '{integer} слов'
   minutes: мин
 sensitive:
   back: Вернуться к списку
@@ -132,15 +132,28 @@ sensitive:
   warning: Если это содержимое может повлиять на ваше психическое состояние, пожалуйста, немедленно покиньте страницу!
 statistics: 
   words:
-    one: 'Написано {words} слово'
-    few: 'Написано {words} слова'
-    many: 'Написано {words} слов'
+    one: 'Написано {integer} слово'
+    few: 'Написано {integer} слова'
+    many: 'Написано {integer} слов'
 theme: 'Тема: ThoughtLite'
 share:
   title: Поделиться
   twitter: Поделиться в X (Twitter)
   linkedin: Поделиться в LinkedIn
   telegram: Поделиться в Telegram
+meta:
+  created: Создано в {text}
+  updated: Обновлено в {text}
+  author: 
+    one: 'Автор: {text}'
+    many: 'Авторы: {text}'
+  group:
+    one: 'В группе: {text}'
+    many: 'В группах: {text}'
+  series:
+    one: 'Серия: {text}'
+    many: 'Серии: {text}'
+  metadata: 'Метаданные:'
 404:
   title: Страница не найдена
   magic_button: Магия!

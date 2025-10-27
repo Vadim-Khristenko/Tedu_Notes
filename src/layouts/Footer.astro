@@ -144,7 +144,7 @@ const policy = information.some(info => info.id == "policy");
 			{CC_icons.map(icon => <Icon name={icon} />)}
 		</a>
 		<span>·</span>
-		<span class="contents"><Icon name="lucide:activity" title={t("statistics", { words: total_words })} /></span>
+		<span class="contents"><Icon name="lucide:activity" title={t("statistics", { integer: total_words })} /></span>
 		{
 			policy && [
 				<span>·</span>,

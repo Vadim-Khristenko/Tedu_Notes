@@ -1,28 +1,30 @@
 {
-	"name": "astro-theme-thought-lite",
+	"name": "Tedu_Notes",
 	"type": "module",
-	"version": "0.17.3",
-	"description": "A modern Astro theme focused on content creation",
+	"version": "0.2.1",
+	"description": "Pocket compass for coding journeys. Build by Vadim Khristenko and Community. With ❤️ for learning.",
 	"keywords": [
 		"astro",
-		"theme",
 		"blog",
 		"svelte",
 		"typescript",
-		"i18n"
+		"i18n",
+		"notes",
+		"programming",
+		"cpp"
 	],
-	"homepage": "https://github.com/tuyuritio/astro-theme-thought-lite",
+	"homepage": "https://github.com/Vadim-Khristenko/Tedu_Notes",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/tuyuritio/astro-theme-thought-lite.git"
+		"url": "https://github.com/Vadim-Khristenko/Tedu_Notes.git"
 	},
 	"bugs": {
-		"url": "https://github.com/tuyuritio/astro-theme-thought-lite/issues"
+		"url": "https://github.com/Vadim-Khristenko/Tedu_Notes/issues"
 	},
-	"license": "GPL-3.0",
+	"license": "MIT",
 	"author": {
-		"name": "tuyuritio",
-		"url": "https://github.com/tuyuritio"
+		"name": "Vadim-Khristenko",
+		"url": "https://github.com/Vadim-Khristenko"
 	},
 	"scripts": {
 		"dev": "astro dev",

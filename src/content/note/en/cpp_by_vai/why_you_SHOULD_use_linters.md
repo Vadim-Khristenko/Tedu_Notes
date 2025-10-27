@@ -14,7 +14,7 @@ contents: true
 > **Lead author:** Vadim Khristenko  
 > **Other authors:** —  
 > **Last updated:** 2025-10-27  
-> **Discussion link:** [Telegram chat](https://t.me/ru_cpp_beginners)
+> **Discussion link:** [Telegram chat](https://t.me/ru_cpp_beginners)  
 > _Note:_ FAQs for C++ beginners.  
 > _Tags:_ C++, basics, linters, code quality, coding style
 

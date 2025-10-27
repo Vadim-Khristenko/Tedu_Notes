@@ -13,7 +13,7 @@ contents: true
 > **Main Author:** Vadim Khristenko  
 > **Other Authors:** —  
 > **Last Updated:** 2025-10-11  
-> **Discussion Link:** Soon there will be a link to the Telegram chat.  
+> **Discussion Link:** [Telegram chat](https://t.me/ru_cpp_beginners)  
 > _Comment:_ FAQ for C++ beginners.  
 > _Tags:_ C++, basics, installation, first example, tips
 

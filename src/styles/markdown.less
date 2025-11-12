@@ -54,28 +54,73 @@
 			text-decoration-color: currentColor;
 		}
 
-		.link-icon(@icon, @size, @offset) {
+		&::after {
+			content: "";
+			display: inline-block;
+			width: 0.9em;
+			height: 0.9em;
+			margin-left: 0.15em;
+			vertical-align: -0.12em;
+			background-color: var(--primary-color);
+			-webkit-mask-repeat: no-repeat;
+			-webkit-mask-position: center;
+			-webkit-mask-size: contain;
+			mask-repeat: no-repeat;
+			mask-position: center;
+			mask-size: contain;
+			opacity: 0.7;
+			transition: opacity 0.15s ease-in-out;
+		}
+
+		&:hover::after {
+			opacity: 1;
+		}
+		
+		// Почта
+		&[href^="mailto:"]::after {
+			-webkit-mask-image: url("/link-mail.svg") !important;
+			mask-image: url("/link-mail.svg") !important;
+		}
+
+		// Телефон
+		&[href^="tel:"]::after {
+			-webkit-mask-image: url("/link-phone.svg") !important;
+			mask-image: url("/link-phone.svg") !important;
+		}
+
+		// Telegram
+		&[href^="https://t.me"],
+		&[href^="tg://"] {
 			&::after {
-				content: @icon;
-
-				padding-right: 6px;
-				padding-left: 2px;
-
-				font-size: @size;
-				vertical-align: @offset;
+				-webkit-mask-image: url("/link-telegram.svg") !important;
+				mask-image: url("/link-telegram.svg") !important;
 			}
 		}
-
-		&[target="_blank"] {
-			.link-icon("", 0.8em, 1px);
+		
+		// Внешние ссылки (target="_blank" или абсолютный http/https), кроме спец. протоколов
+		&[target="_blank"]::after,
+		&[href^="http"]:not(
+			[href^="/"],
+			[href*="tedu-notes.ru"],
+			[href^="https://t.me"],
+			[href^="tg://"]
+		)::after {
+			-webkit-mask-image: url("/link-external.svg");
+			mask-image: url("/link-external.svg");
 		}
 
-		&:not([target="_blank"], [data-footnote-ref], [data-footnote-backref]) {
-			.link-icon("", 0.85em, 0.5px);
-
-			&[href^="mailto:"] {
-				.link-icon("󱃝", 0.9em, 0px);
-			}
+		// Внутренние ссылки и служебные (без спец-иконок)
+		&:not(
+			[href^="http"],
+			[href^="mailto:"],
+			[href^="tel:"],
+			[href^="https://t.me"],
+			[href^="tg://"],
+			[data-footnote-ref],
+			[data-footnote-backref]
+		)::after {
+			-webkit-mask-image: url("/link.svg");
+			mask-image: url("/link.svg");
 		}
 	}
 
@@ -90,12 +135,21 @@
 				text-decoration: none;
 
 				&::after {
-					content: "󰌷";
-					margin: 0rem 0.3rem;
-
-					font-size: 0.8em;
-					font-weight: normal;
-
+					content: "";
+					display: inline-block;
+					width: 0.9em;
+					height: 0.9em;
+					margin-left: 0.2rem;
+					vertical-align: -0.1em;
+					background-color: var(--primary-color);
+					-webkit-mask-image: url("/link.svg");
+					-webkit-mask-repeat: no-repeat;
+					-webkit-mask-position: center;
+					-webkit-mask-size: contain;
+					mask-image: url("/link.svg");
+					mask-repeat: no-repeat;
+					mask-position: center;
+					mask-size: contain;
 					opacity: 0;
 					transition: opacity 0.15s ease-in-out;
 				}

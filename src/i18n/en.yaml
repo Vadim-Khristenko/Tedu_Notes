@@ -84,6 +84,9 @@ navigation:
   preface: Preface
   subscription: Subscription
 note:
+  subtitle: "Notes and study materials, made simple."
+  legacy_banner: "The old notes list is available via direct link."
+  legacy_button: "Go to old design →"
   contents: Contents
   series: Series
   tag: Tag
@@ -136,8 +139,8 @@ share:
   linkedin: Share on LinkedIn
   telegram: Share on Telegram
 meta:
-  created: 'Created on {text}'
-  updated: 'Updated on {text}'
+  created: 'Created at {text}'
+  updated: 'Updated at {text}'
   author: 
     one: 'Author: {text}'
     few: 'Authors: {text}'

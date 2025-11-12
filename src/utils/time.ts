@@ -19,13 +19,16 @@ function datetime(time?: Date | number, timezone: string = Time.default_timezone
 }
 
 /**
- * Main Time function - formats a date/time with timezone support
- * @param time - Date object, timestamp number, or undefined (defaults to current time)
- * @param timezone - Timezone string (defaults to configured default timezone)
- * @returns Formatted date-time string in "yyyy/MM/dd-HH:mm:ss" format
+ * Main Time function - человекочитаемая дата-время с учётом таймзоны.
+ * Пример: "9 ноября 2025, 11:35" (под текущую локаль).
  */
 function Time(time?: Date | number, timezone: string = Time.default_timezone): string {
-	return datetime(time, timezone).toFormat("yyyy/MM/dd-HH:mm:ss");
+	return datetime(time, timezone)
+		.setLocale(typeof navigator !== "undefined" ? navigator.language : "ru-RU")
+		.toLocaleString({
+			...DateTime.DATETIME_MED,
+			month: "long",
+		});
 }
 
 // Time namespace containing various date/time formatting and manipulation utilities
@@ -90,13 +93,11 @@ namespace Time {
 	}
 
 	/**
-	 * Format full date-time with timezone information
-	 * @param time - Date object, timestamp number, or undefined (defaults to current time)
-	 * @param timezone - Timezone string (defaults to configured default timezone)
-	 * @returns Formatted date-time string with timezone offset (e.g., "2024/01/15-14:30:00 UTC+09:00")
+	 * Полный формат для title/подсказок: точная дата и время с таймзоной.
+	 * Пример: "2025-11-09 11:35:00 UTC+03:00".
 	 */
 	export function full(time?: Date | number, timezone: string = default_timezone): string {
-		return datetime(time, timezone).toFormat("yyyy/MM/dd-HH:mm:ss 'UTC'ZZ");
+		return datetime(time, timezone).toFormat("yyyy-LL-dd HH:mm:ss 'UTC'ZZ");
 	}
 
 	/**

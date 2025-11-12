@@ -1,0 +1,323 @@
+---
+import type { MarkdownHeading } from "astro";
+import { i18n } from "astro:config/client";
+import { getCollection, render } from "astro:content";
+import Time from "$utils/time";
+import Base from "$layouts/Base.astro";
+import Icon from "$components/Icon.astro";
+import TOC from "$components/note/TOC.astro";
+import Position from "$components/Position.astro";
+import Sensitive from "$components/Sensitive.svelte";
+import i18nit from "$i18n";
+
+export async function getStaticPaths() {
+	const notes = await getCollection("note", note => !note.data.draft);
+
+	return notes.map(note => {
+		const [language, ...id] = note.id.split("/");
+		return { params: { locale: language == i18n?.defaultLocale ? undefined : language, id: id.join("/") }, props: { note } };
+	});
+}
+
+const { locale = i18n!.defaultLocale } = Astro.params;
+const { note } = Astro.props;
+
+// Render markdown and extract headings for TOC
+const { Content, headings, remarkPluginFrontmatter: frontmatter } = await render(note);
+
+// Build nested TOC structure from flat headings
+type Heading = MarkdownHeading & { subheadings: Heading[] };
+const table_of_contents: Heading[] = [];
+const stack: Heading[] = [];
+for (const item of headings) {
+	while (stack[stack.length - 1]?.depth >= item.depth) stack.pop();
+	const heading: Heading = { ...item, subheadings: [] };
+
+	if (stack.length > 0) {
+		stack[stack.length - 1].subheadings.push(heading);
+	} else {
+		table_of_contents.push(heading);
+	}
+	stack.push(heading);
+}
+
+const t = i18nit(locale);
+
+// Format title: split by line breaks or keep as single line
+function formatTitle(raw: unknown, splitEnabled = true): string[] {
+	if (raw === undefined || raw === null) return [''];
+	const s = String(raw);
+	if (!splitEnabled) {
+		const single = s.replace(/<br\s*\/?>(\s*)/gi, ' ').replace(/\n+/g, ' ');
+		return [single.trim()];
+	}
+	const replaced = s.replace(/<br\s*\/?>(\s*)/gi, '\n');
+	return replaced.split('\n').map((l) => l.trim());
+}
+
+const titleSplitEnabled: boolean = note.data?.title_split === false ? false : true;
+const titleLines: string[] = formatTitle(note.data.title, titleSplitEnabled);
+
+// Last updated metadata (from data or frontmatter)
+const lastUpdatedTimestamp: string | undefined = note.data?.last_updated_timestamp ?? (frontmatter as any)?.last_updated_timestamp;
+const lastUpdated: Date | undefined = lastUpdatedTimestamp ? new Date(lastUpdatedTimestamp) : undefined;
+const lastUpdatedText: string | undefined = lastUpdated ? Time(lastUpdated) : undefined;
+const lastUpdatedFull: string | undefined = lastUpdated ? Time.full(lastUpdated) : undefined;
+
+// Breadcrumbs navigation
+let localePrefix = locale === i18n?.defaultLocale ? '' : `/${locale}`;
+if (localePrefix === '/ru') { localePrefix = ''; }
+let realNoteId = typeof note.id === 'string' ? note.id.replace(/^[^/]*\//, '') : String(note.id);
+const breadcrumbs = [
+	{ label: t("navigation.home"), href: `${localePrefix}/` },
+	{ label: t("navigation.note"), href: `${localePrefix}/note-legacy` },
+];
+if (note.data.series) {
+	breadcrumbs.push({ label: note.data.series, href: `${localePrefix}/note-legacy?series=${encodeURIComponent(note.data.series)}` });
+}
+breadcrumbs.push({ label: formatTitle(note.data.title).join(" - "), href: '#' });
+
+// Schema.org structured data for SEO
+const structuredData = {
+	"@context": "https://schema.org",
+	"@type": "Article",
+	"headline": note.data.title,
+	"description": note.data.description,
+	"author": { "@type": "Person", "name": "Vadim Khristenko" },
+	"datePublished": note.data.timestamp.toISOString(),
+	"dateModified": note.data.timestamp.toISOString(),
+	"mainEntityOfPage": { "@type": "WebPage", "@id": `https://tedu-notes.ru${localePrefix}/note-legacy/${note.id.replace(/\//g, '-')}` },
+	"publisher": { "@type": "Organization", "name": "TEDU Notes", "logo": { "@type": "ImageObject", "url": "https://tedu-notes.ru/favicon.svg" } },
+	"articleSection": note.data.series || "Notes",
+	"keywords": note.data.tags?.join(", "),
+	"wordCount": frontmatter.words,
+	"timeRequired": `PT${Math.ceil(frontmatter.words / 200)}M`
+};
+---
+
+<Base title={note.data.title} {locale} description={note.data.description} article={{ timestamp: note.data.timestamp, section: note.data.series, tags: note.data.tags }}>
+	<script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline />
+
+	<main class="flex flex-col gap-6">
+		<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-sm text-secondary">
+			{breadcrumbs.map((crumb, index) => (
+				<>
+					{index > 0 && <Icon name="lucide:chevron-right" class="w-4 h-4" />}
+					{crumb.href.startsWith('#') ? (
+						<span class="font-medium">{crumb.label}</span>
+					) : (
+						<a href={crumb.href} class="hover:text-primary transition-colors">{crumb.label}</a>
+					)}
+				</>
+			))}
+		</nav>
+
+		<header class="note-hero">
+			<style>
+				.title-line { display: block; line-height: 1.05; }
+			</style>
+			<div class="note-hero-inner">
+				<div class="note-hero-top">
+					{note.data.series && (
+						<span class="series-badge"><Icon name="lucide:layers" /> {note.data.series}</span>
+					)}
+
+					<h1 class="note-h1">
+						{titleLines.map(line => (
+							<span class="title-line">{line}</span>
+						))}
+					</h1>
+				</div>
+
+				{note.data.description && <p class="note-excerpt">{note.data.description}</p>}
+
+				<div class="note-meta-row warm">
+					<time class="meta-item" title={Time.full(note.data.timestamp)} datetime={note.data.timestamp.toISOString()}>
+						<Icon name="lucide:calendar" />
+						<span>{t('meta.created', { text: Time(note.data.timestamp) })}</span>
+					</time>
+
+					{lastUpdated && (
+						<time class="meta-item meta-updated" title={lastUpdatedFull}>
+							<Icon name="lucide:refresh-ccw" />
+							<span>{t('meta.updated', { text: lastUpdatedText! })}</span>
+						</time>
+					)}
+
+					{note.data.tags?.length && (
+						<div class="tags">
+							{note.data.tags.map(tag => (
+								<span class="tag-chip">{tag}</span>
+							))}
+						</div>
+					)}
+
+					<div class="meta-item">
+						<Icon name="lucide:pilcrow" />
+						<span>{t("read.words", { integer: frontmatter.words })}</span>
+					</div>
+
+					<div class="meta-item">
+						<Icon name="lucide:clock" />
+						<span>{Math.ceil(frontmatter.words / 200)} {t("read.minutes")}</span>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<Sensitive {locale} back="/note-legacy" sensitive={note.data.sensitive} client:load>
+			<div class="note-layout">
+				<main class="note-main markdown" id="markdown-content">
+					<Content />
+				</main>
+
+				{note.data.contents && (
+					<aside class="note-toc">
+						<div class="sticky top-3 note-toc-inner">
+							<div class="toc-header">
+								<h3>{t("note.contents")}</h3>
+							</div>
+							<nav class="toc-nav">
+								<TOC headings={table_of_contents} />
+							</nav>
+						</div>
+					</aside>
+				)}
+			</div>
+		</Sensitive>
+
+		<div class="flex gap-3 items-center social-share">
+			<span class="text-sm text-secondary">{t("share.title")}:</span>
+			<a href={`https://x.com/intent/tweet?text=${encodeURIComponent(note.data.title)}&url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note-legacy/${realNoteId}`)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--twitter" aria-label={t("share.twitter")}>
+				<Icon name="simple-icons:x" class="w-4 h-4" />
+				<span class="sr-only">{t("share.twitter")}</span>
+			</a>
+
+			<a href={`https://t.me/share/url?url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note-legacy/${realNoteId}`)}&text=${encodeURIComponent(note.data.title)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--telegram" aria-label={t("share.telegram")}>
+				<Icon name="simple-icons:telegram" class="w-4 h-4" />
+				<span class="sr-only">{t("share.telegram")}</span>
+			</a>
+
+			<a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note-legacy/${realNoteId}`)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--linkedin" aria-label={t("share.linkedin")}>
+				<Icon name="simple-icons:linkedin" class="w-4 h-4" />
+				<span class="sr-only">{t("share.linkedin")}</span>
+			</a>
+		</div>
+
+		<Position {locale} />
+	</main>
+</Base>
+
+<script>
+	// Smooth scroll for TOC anchor links
+	document.addEventListener('click', (e) => {
+		const target = e.target as HTMLElement;
+		if (target.matches('a[href^="#"]')) {
+			e.preventDefault();
+			const id = target.getAttribute('href')?.slice(1);
+			const element = document.getElementById(id || '');
+			if (element) {
+				element.scrollIntoView({ behavior: 'smooth' });
+			}
+		}
+	});
+</script>
+
+<style>
+.sr-only {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0,0,0,0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+.share-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	width: 40px;
+	height: 36px;
+	border-radius: 8px;
+	color: var(--background-color);
+	transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.share-btn--twitter { background: #ffffff; }
+.share-btn--twitter:hover { background: #f0f0f0; transform: translateY(-2px); }
+
+.share-btn--telegram { background: #26A5E4; }
+.share-btn--telegram:hover { background: #1b8fc5; transform: translateY(-2px); }
+
+.share-btn--linkedin { background: #0077B5; }
+.share-btn--linkedin:hover { background: #005f95; transform: translateY(-2px); }
+
+.note-hero {
+	border-radius: 12px;
+	padding: clamp(1rem, 3vw, 2rem);
+	background: linear-gradient(90deg, color-mix(in oklab, var(--primary-color) 6%, transparent), transparent 60%);
+	box-shadow: 0 10px 30px rgba(2,6,23,0.04);
+}
+
+.note-hero-inner { max-width: 1100px; margin: 0 auto; }
+.note-hero-top { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+.series-badge {
+	display: inline-flex;
+	gap: 0.5rem;
+	align-items: center;
+	padding: 0.25rem 0.6rem;
+	border-radius: 999px;
+	background: color-mix(in oklab, var(--primary-color) 10%, transparent);
+	border: 1px solid color-mix(in oklab, var(--primary-color) 18%, transparent);
+	font-weight: 600;
+}
+
+.note-h1 { margin: 0; font-size: clamp(1.8rem, 4.6vw, 3rem); }
+.note-excerpt { margin: 0.5rem 0 0; color: var(--remark-color); font-size: 1rem; }
+
+.note-meta-row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-top: 0.75rem; }
+
+.meta-item {
+	display: inline-flex;
+	gap: 0.5rem;
+	align-items: center;
+	padding: 0.3rem 0.6rem;
+	border-radius: 999px;
+	background: color-mix(in oklab, var(--background-color) 96%, var(--primary-color) 2%);
+	border: 1px solid color-mix(in oklab, var(--primary-color) 12%, transparent);
+	font-size: 0.95rem;
+}
+
+.meta-updated { background: color-mix(in oklab, var(--primary-color) 8%, transparent); }
+
+.tags { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
+.tag-chip { padding: 0.2rem 0.5rem; border-radius: 999px; background: color-mix(in oklab, var(--primary-color) 6%, transparent); border: 1px solid color-mix(in oklab, var(--primary-color) 14%, transparent); }
+
+.note-layout { display: grid; grid-template-columns: 1fr 260px; gap: 1.25rem; align-items: start; }
+
+.note-main { min-width: 0; overflow: hidden; }
+.note-main.markdown { width: 100%; max-width: 100%; display: block; }
+
+.note-toc { display: block; min-width: 0; }
+.note-toc-inner { padding-left: 0.5rem; }
+.toc-header h3 { margin: 0 0 0.5rem 0; font-size: 1rem; }
+.toc-nav { max-height: 72vh; overflow: auto; }
+
+@media (max-width: 860px) {
+	.note-layout { grid-template-columns: 1fr; }
+	.note-toc { display: none; }
+}
+
+.note-main section { min-width: 0 !important; width: 100%; }
+
+.callout { padding: 0.8rem 1rem; border-radius: 10px; margin: 0.9rem 0; display: flex; gap: 0.75rem; align-items: flex-start; }
+.callout--info { background: color-mix(in oklab, var(--primary-color) 6%, transparent); border: 1px solid color-mix(in oklab, var(--primary-color) 14%, transparent); }
+.callout--tip { background: color-mix(in oklab, #00c853 6%, transparent); border: 1px solid color-mix(in oklab, #00c853 14%, transparent); }
+.callout--warn { background: color-mix(in oklab, #ffb300 6%, transparent); border: 1px solid color-mix(in oklab, #ffb300 14%, transparent); }
+</style>

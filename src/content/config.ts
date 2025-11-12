@@ -9,18 +9,33 @@ const note = defineCollection({
 	// Load all markdown files except those starting with underscore (private/draft files)
 	loader: glob({ pattern: ["**/*.md", "!**/_*.md", "!**/_*/*.md"], base: "./src/content/note" }),
 	schema: z.object({
-		title: z.string(),								// Post title (required)
-		timestamp: z.date(),							// Publication date (required)
-		last_updated_timestamp: z.date().optional(),    // Last updated date
-		series: z.string().optional(),					// Series name for grouped posts
-		tags: z.array(z.string()).optional(),			// Array of topic tags
-		description: z.string().optional(),				// Post description/excerpt
-		sensitive: z.boolean().default(false),			// Marks content as sensitive
-		contents: z.boolean().default(false),			// Whether to show table of contents
-		top: z.number().int().nonnegative().default(0),	// Top priority for sorting (higher is more important)
-		draft: z.boolean().default(false),				// Draft status (excludes from public listing)
-		title_split: z.boolean().default(true),			// Whether to split title into multiple lines
-		remove_from_search: z.boolean().default(false),	// Exclude from search results
+		// Identification
+		title: z.string(), // Post title (required)
+		slug: z.string().optional(), // Custom slug if needed
+
+		// Time and relevance
+		timestamp: z.date(), // Publication date
+		last_updated_timestamp: z.date().optional(), // Last update (for feeds and UI)
+
+		// Structure and navigation
+		series: z.string().optional(), // Series name
+		tags: z.array(z.string()).default([]), // Array of tags; always an array for convenience
+		groups: z.array(z.string()).default([]).optional(), // Additional groupings (courses, streams, etc.)
+		remove_from_search: z.boolean().default(false), // Exclude from search and auto-suggestions
+
+		// Display and UX
+		description: z.string().optional(), // Brief description/excerpt
+		contents: z.boolean().default(false), // Show table of contents
+		title_split: z.boolean().default(true), // Allow splitting title into multiple lines
+
+		// Flags
+		sensitive: z.boolean().default(false), // Marks content as sensitive
+		top: z.number().int().nonnegative().default(0), // Priority for anchoring/sorting
+		draft: z.boolean().default(false), // Draft status (excludes from public listing)
+
+		// Media
+		image: z.string().optional(), // Path or URL to the cover image (supports relative)
+		image_alt: z.string().optional(), // Alt text for the cover image
 	})
 });
 

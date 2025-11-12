@@ -88,6 +88,9 @@ navigation:
   preface: Предисловие
   subscription: Подписка
 note:
+  subtitle: "Конспекты и учебные материалы, просто и понятно."
+  legacy_banner: "Старый список конспектов доступен по прямой ссылке."
+  legacy_button: "Перейти к старому дизайну →"
   contents: Содержание
   series: Серия
   tag: Тэг
@@ -142,8 +145,8 @@ share:
   linkedin: Поделиться в LinkedIn
   telegram: Поделиться в Telegram
 meta:
-  created: Создано в {text}
-  updated: Обновлено в {text}
+  created: "Создано: {text}"
+  updated: "Обновлено: {text}"
   author: 
     one: 'Автор: {text}'
     many: 'Авторы: {text}'

@@ -1,4 +1,5 @@
 .light-theme() {
+	// Базовые цвета
 	--primary-color: #2a2a28;
 	--secondary-color: #50504d;
 	--remark-color: #757575;
@@ -7,9 +8,34 @@
 	--block-color: #eeeeee;
 	--shadow-color: #cdcdcc;
 	--selection-color: #adadacc3;
+
+	// Акцент и состояния
+	--accent-color: #f2a93b;
+	--accent-soft: #fff3da;
+	--border-subtle: rgba(0, 0, 0, 0.06);
+	--border-strong: rgba(0, 0, 0, 0.16);
+	--surface-soft: #f7f7f5;
+	--surface-elevated: #ffffff;
+
+	// Типографика
+	--text-main: var(--primary-color);
+	--text-muted: var(--remark-color);
+	--text-soft: #a5a5a3;
+
+	// Note / layout helpers
+	--note-hero-bg: color-mix(in srgb, var(--background-color) 96%, var(--primary-color) 4%);
+	--note-card-bg: color-mix(in srgb, var(--background-color) 98%, var(--primary-color) 2%);
+	--note-border: color-mix(in srgb, var(--primary-color) 12%, transparent 88%);
+	--note-radius-lg: 20px;
+	--note-radius-md: 14px;
+	--note-radius-sm: 8px;
+	--note-gap-lg: 1.75rem;
+	--note-gap-md: 1.1rem;
+	--note-gap-sm: 0.6rem;
 }
 
 .dark-theme() {
+	// Базовые цвета
 	--primary-color: #dddddb;
 	--secondary-color: #aaaaa8;
 	--remark-color: #a5a5a5;
@@ -18,6 +44,30 @@
 	--block-color: #1e1e1e;
 	--shadow-color: #323231;
 	--selection-color: #adadacc3;
+
+	// Акцент и состояния
+	--accent-color: #f2a93b;
+	--accent-soft: #2a210f;
+	--border-subtle: rgba(255, 255, 255, 0.06);
+	--border-strong: rgba(255, 255, 255, 0.16);
+	--surface-soft: #111110;
+	--surface-elevated: #111111;
+
+	// Типографика
+	--text-main: var(--primary-color);
+	--text-muted: var(--remark-color);
+	--text-soft: #7d7d7b;
+
+	// Note / layout helpers
+	--note-hero-bg: color-mix(in srgb, var(--background-color) 92%, var(--primary-color) 8%);
+	--note-card-bg: color-mix(in srgb, var(--background-color) 94%, var(--primary-color) 6%);
+	--note-border: color-mix(in srgb, var(--primary-color) 20%, transparent 80%);
+	--note-radius-lg: 20px;
+	--note-radius-md: 14px;
+	--note-radius-sm: 8px;
+	--note-gap-lg: 1.75rem;
+	--note-gap-md: 1.1rem;
+	--note-gap-sm: 0.6rem;
 }
 
 .code-dark() {
@@ -31,26 +81,45 @@
 
 :root {
 	.light-theme();
+	--logo-font: "Zen Dots", "Unbounded", sans-serif;
 	--serif: "Noto Serif SC", serif;
-	--monospace: "Maple Mono NF CN", monospace;
-	--swup-fade-theme-duration: .15s;
+	--monospace: "JetBrains Mono", monospace;
+	--note-title-font: "Unbounded", sans-serif;
+	--swup-fade-theme-duration: 0.15s;
+
+	// Глобальные размеры
+	--page-max-width: 1180px;
+	--page-padding-x: 1.2rem;
+	--page-padding-y: 1.5rem;
+
+	// Анимации
+	--transition-fast: 0.12s ease;
+	--transition-normal: 0.18s ease;
 }
 
 :lang(zh-hk),
 :lang(zh-mo) {
 	--serif: "Noto Serif HK", "Noto Serif SC", serif;
+	--note-title-font: "Noto Serif HK", "Noto Serif SC", serif;
 }
 
 :lang(zh-tw) {
 	--serif: "Noto Serif TC", "Noto Serif SC", serif;
+	--note-title-font: "Noto Serif TC", "Noto Serif SC", serif;
 }
 
 :lang(ja) {
 	--serif: "Noto Serif JP", "Noto Serif SC", serif;
+	--note-title-font: "Noto Serif JP", "Noto Serif SC", serif;
 }
 
 :lang(ko) {
 	--serif: "Noto Serif KR", "Noto Serif SC", serif;
+	--note-title-font: "Noto Serif KR", "Noto Serif SC", serif;
+}
+
+:lang(ru) {
+	--serif: "Exo 2", serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -78,6 +147,7 @@
 	box-sizing: border-box;
 
 	font-family: inherit;
+	-webkit-user-select: none;
 	user-select: none;
 
 	-webkit-tap-highlight-color: transparent;

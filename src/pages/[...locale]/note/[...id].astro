@@ -2,184 +2,242 @@
 import type { MarkdownHeading } from "astro";
 import { i18n } from "astro:config/client";
 import { getCollection, render } from "astro:content";
-import Time from "$utils/time";
 import Base from "$layouts/Base.astro";
 import Icon from "$components/Icon.astro";
 import TOC from "$components/note/TOC.astro";
-import Position from "$components/Position.astro";
 import Sensitive from "$components/Sensitive.svelte";
+import Position from "$components/Position.astro";
+import Time from "$utils/time";
 import i18nit from "$i18n";
 
 export async function getStaticPaths() {
-	const notes = await getCollection("note", note => !note.data.draft);
+	const notes = await getCollection("note", (note) => !note.data.draft);
 
-	return notes.map(note => {
+	return notes.map((note) => {
 		const [language, ...id] = note.id.split("/");
-		return { params: { locale: language == i18n?.defaultLocale ? undefined : language, id: id.join("/") }, props: { note } };
+		return {
+			params: {
+				locale: language === i18n?.defaultLocale ? undefined : language,
+				id: id.join("/"),
+			},
+			props: { note },
+		};
 	});
 }
 
 const { locale = i18n!.defaultLocale } = Astro.params;
 const { note } = Astro.props;
-
-// Render markdown and extract headings for TOC
-const { Content, headings, remarkPluginFrontmatter: frontmatter } = await render(note);
-
-// Build nested TOC structure from flat headings
-type Heading = MarkdownHeading & { subheadings: Heading[] };
-const table_of_contents: Heading[] = [];
-const stack: Heading[] = [];
-for (const item of headings) {
-	while (stack[stack.length - 1]?.depth >= item.depth) stack.pop();
-	const heading: Heading = { ...item, subheadings: [] };
-
-	if (stack.length > 0) {
-		stack[stack.length - 1].subheadings.push(heading);
-	} else {
-		table_of_contents.push(heading);
-	}
-	stack.push(heading);
-}
-
 const t = i18nit(locale);
 
-// Format title: split by line breaks or keep as single line
-function formatTitle(raw: unknown, splitEnabled = true): string[] {
-	if (raw === undefined || raw === null) return [''];
-	const s = String(raw);
-	if (!splitEnabled) {
-		const single = s.replace(/<br\s*\/?>(\s*)/gi, ' ').replace(/\n+/g, ' ');
-		return [single.trim()];
+// Render markdown and extract headings
+const { Content, headings, remarkPluginFrontmatter: frontmatter } = await render(note);
+
+// Build nested TOC only if contents is enabled
+const buildTOC = (raw: MarkdownHeading[]): any[] => {
+	const tree: any[] = [];
+	const stack: any[] = [];
+
+	for (const h of raw) {
+		while (stack.length && stack[stack.length - 1].depth >= h.depth) stack.pop();
+		const node = { ...h, subheadings: [] as any[] };
+		if (stack.length) {
+			stack[stack.length - 1].subheadings.push(node);
+		} else {
+			tree.push(node);
+		}
+		stack.push(node);
 	}
-	const replaced = s.replace(/<br\s*\/?>(\s*)/gi, '\n');
-	return replaced.split('\n').map((l) => l.trim());
-}
 
-const titleSplitEnabled: boolean = note.data?.title_split === false ? false : true;
-const titleLines: string[] = formatTitle(note.data.title, titleSplitEnabled);
+	return tree;
+};
 
-// Last updated metadata (from data or frontmatter)
-const lastUpdatedTimestamp: string | undefined = note.data?.last_updated_timestamp ?? (frontmatter as any)?.last_updated_timestamp;
-const lastUpdated: Date | undefined = lastUpdatedTimestamp ? new Date(lastUpdatedTimestamp) : undefined;
-const lastUpdatedText: string | undefined = lastUpdated ? Time(lastUpdated) : undefined;
-const lastUpdatedFull: string | undefined = lastUpdated ? Time.full(lastUpdated) : undefined;
+const hasContents = note.data.contents === true;
+const table_of_contents: any[] = hasContents ? buildTOC(headings) : [];
 
-// Breadcrumbs navigation
-let localePrefix = locale === i18n?.defaultLocale ? '' : `/${locale}`;
-if (localePrefix === '/ru') { localePrefix = ''; }
-let realNoteId = typeof note.id === 'string' ? note.id.replace(/^[^/]*\//, '') : String(note.id);
+// Title formatting
+const formatTitle = (raw: unknown, split: boolean): string[] => {
+	if (raw === undefined || raw === null) return [""];
+	const s = String(raw);
+	if (!split) return [s.replace(/<br\s*\/?>(\s*)|\n+/gi, " ").trim()];
+	return s
+		.replace(/<br\s*\/?>(\s*)/gi, "\n")
+		.split(/\n+/)
+		.map((l) => l.trim())
+		.filter(Boolean);
+};
+
+const titleSplit = note.data.title_split !== false;
+const titleLines = formatTitle(note.data.title, titleSplit);
+
+// Dates
+const published = note.data.timestamp;
+const publishedHuman = Time(published);
+const publishedFull = Time.full(published);
+
+const lastUpdated = note.data.last_updated_timestamp
+	? new Date(note.data.last_updated_timestamp)
+	: undefined;
+const lastUpdatedHuman = lastUpdated ? Time(lastUpdated) : undefined;
+const lastUpdatedFull = lastUpdated ? Time.full(lastUpdated) : undefined;
+
+// Breadcrumbs
+let localePrefix = locale === i18n?.defaultLocale || locale === "ru" ? "" : `/${locale}`;
+const realNoteId = typeof note.id === "string" ? note.id.replace(/^[^/]*\//, "") : String(note.id);
+
 const breadcrumbs = [
 	{ label: t("navigation.home"), href: `${localePrefix}/` },
 	{ label: t("navigation.note"), href: `${localePrefix}/note` },
 ];
 if (note.data.series) {
-	breadcrumbs.push({ label: note.data.series, href: `${localePrefix}/note?series=${encodeURIComponent(note.data.series)}` });
+	breadcrumbs.push({
+		label: note.data.series,
+		href: `${localePrefix}/note?series=${encodeURIComponent(note.data.series)}`,
+	});
 }
-breadcrumbs.push({ label: formatTitle(note.data.title).join(" - "), href: '#' });
+breadcrumbs.push({ label: titleLines.join(" · "), href: "#" });
 
-// Schema.org structured data for SEO
+// Schema.org
 const structuredData = {
 	"@context": "https://schema.org",
 	"@type": "Article",
-	"headline": note.data.title,
-	"description": note.data.description,
-	"author": { "@type": "Person", "name": "Vadim Khristenko" },
-	"datePublished": note.data.timestamp.toISOString(),
-	"dateModified": note.data.timestamp.toISOString(),
-	"mainEntityOfPage": { "@type": "WebPage", "@id": `https://tedu-notes.ru${localePrefix}/note/${note.id.replace(/\//g, '-')}` },
-	"publisher": { "@type": "Organization", "name": "TEDU Notes", "logo": { "@type": "ImageObject", "url": "https://tedu-notes.ru/favicon.svg" } },
-	"articleSection": note.data.series || "Notes",
-	"keywords": note.data.tags?.join(", "),
-	"wordCount": frontmatter.words,
-	"timeRequired": `PT${Math.ceil(frontmatter.words / 200)}M`
+	headline: note.data.title,
+	description: note.data.description,
+	author: { "@type": "Person", name: "Vadim Khristenko" },
+	datePublished: published.toISOString(),
+	dateModified: (lastUpdated ?? published).toISOString(),
+	mainEntityOfPage: {
+		"@type": "WebPage",
+		"@id": `https://tedu-notes.ru${localePrefix}/note/${realNoteId}`,
+	},
+	publisher: {
+		"@type": "Organization",
+		name: "TEDU Notes",
+		logo: { "@type": "ImageObject", url: "https://tedu-notes.ru/favicon.svg" },
+	},
+	articleSection: note.data.series || "Notes",
+	keywords: (note.data.tags ?? []).join(", "),
+	wordCount: frontmatter.words,
+	timeRequired: `PT${Math.ceil(frontmatter.words / 200)}M`,
 };
 ---
 
-<Base title={note.data.title} {locale} description={note.data.description} article={{ timestamp: note.data.timestamp, section: note.data.series, tags: note.data.tags }}>
+<Base
+	title={note.data.title}
+	{locale}
+	description={note.data.description}
+	article={{
+		timestamp: published,
+		last_updated_timestamp: lastUpdated,
+		section: note.data.series,
+		tags: note.data.tags,
+		image: note.data.image,
+		image_alt: note.data.image_alt,
+	}}
+>
 	<script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline />
 
-	<div id="reading-progress" class="fixed top-0 left-0 w-full h-1 bg-primary z-50 transition-all duration-300"></div>
-
-	<main class="flex flex-col gap-6">
-		<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-sm text-secondary">
+	<main class="note-page">
+		<nav aria-label="Breadcrumb" class="note-breadcrumbs">
 			{breadcrumbs.map((crumb, index) => (
 				<>
-					{index > 0 && <Icon name="lucide:chevron-right" class="w-4 h-4" />}
-					{crumb.href.startsWith('#') ? (
-						<span class="font-medium">{crumb.label}</span>
+					{index > 0 && <Icon name="lucide:chevron-right" class="crumb-sep" />}
+					{crumb.href === "#" ? (
+						<span class="crumb crumb--current">{crumb.label}</span>
 					) : (
-						<a href={crumb.href} class="hover:text-primary transition-colors">{crumb.label}</a>
+						<a href={crumb.href} class="crumb">{crumb.label}</a>
 					)}
 				</>
 			))}
 		</nav>
 
-		<header class="note-hero">
-			<style>
-				.title-line { display: block; line-height: 1.05; }
-			</style>
-			<div class="note-hero-inner">
-				<div class="note-hero-top">
-					{note.data.series && (
-						<span class="series-badge"><Icon name="lucide:layers" /> {note.data.series}</span>
-					)}
+		<header class={`note-hero-beta ${note.data.image ? "note-hero-beta--with-image" : "note-hero-beta--no-image"}`}>
+			<div class="note-hero-beta__content">
+				{note.data.series && (
+					<div class="label-series">
+						<Icon name="lucide:layers" />
+						<span>{note.data.series}</span>
+					</div>
+				)}
 
-					<h1 class="note-h1">
-						{titleLines.map(line => (
-							<span class="title-line">{line}</span>
-						))}
-					</h1>
-				</div>
+				<h1 class="note-title-beta" style={`font-family: var(--note-title-font);`}>
+					{titleLines.map((line) => (
+						<span class="title-line">{line}</span>
+					))}
+				</h1>
 
-				{note.data.description && <p class="note-excerpt">{note.data.description}</p>}
+				{note.data.description && (
+					<p class="note-subtitle-beta">{note.data.description}</p>
+				)}
 
-				<div class="note-meta-row warm">
-					<time class="meta-item" title={Time.full(note.data.timestamp)} datetime={note.data.timestamp.toISOString()}>
-						<Icon name="lucide:calendar" />
-						<span>{t('meta.created', { text: Time(note.data.timestamp) })}</span>
-					</time>
+				<div class="note-meta-beta">
+					<div class="note-meta-row note-meta-row--dates">
+						{lastUpdated && (
+							<time
+								class="meta-pill meta-pill--soft"
+								title={lastUpdatedFull}
+							>
+								<Icon name="lucide:refresh-ccw" />
+								<span>{t("meta.updated", { text: lastUpdatedHuman! })}</span>
+							</time>
+						)}
 
-					{lastUpdated && (
-						<time class="meta-item meta-updated" title={lastUpdatedFull}>
-							<Icon name="lucide:refresh-ccw" />
-							<span>{t('meta.updated', { text: lastUpdatedText! })}</span>
+						<time
+							class="meta-pill"
+							title={publishedFull}
+							datetime={published.toISOString()}
+						>
+							<Icon name="lucide:calendar" />
+							<span>{t("meta.created", { text: publishedHuman })}</span>
 						</time>
-					)}
+					</div>
 
 					{note.data.tags?.length && (
-						<div class="tags">
-							{note.data.tags.map(tag => (
-								<span class="tag-chip">{tag}</span>
+						<div class="note-meta-row note-meta-row--tags">
+							{note.data.tags.map((tag) => (
+								<span class="tag-pill">{tag}</span>
 							))}
 						</div>
 					)}
 
-					<div class="meta-item">
-						<Icon name="lucide:pilcrow" />
-						<span>{t("read.words", { integer: frontmatter.words })}</span>
-					</div>
+					<div class="note-meta-row note-meta-row--extra">
+						<div class="meta-pill meta-pill--soft">
+							<Icon name="lucide:pilcrow" />
+							<span>{t("read.words", { integer: frontmatter.words })}</span>
+						</div>
 
-					<div class="meta-item">
-						<Icon name="lucide:clock" />
-						<span>{Math.ceil(frontmatter.words / 200)} {t("read.minutes")}</span>
+						<div class="meta-pill meta-pill--ghost">
+							<Icon name="lucide:clock" />
+							<span>{Math.ceil(frontmatter.words / 200)} {t("read.minutes")}</span>
+						</div>
 					</div>
 				</div>
 			</div>
+
+			{note.data.image && (
+				<div class="note-hero-beta__image">
+					<img
+						src={note.data.image}
+						alt={note.data.image_alt ?? note.data.title}
+						loading="lazy"
+						decoding="async"
+					/>
+				</div>
+			)}
 		</header>
 
 		<Sensitive {locale} back="/note" sensitive={note.data.sensitive} client:load>
-			<div class="note-layout">
-				<main class="note-main markdown" id="markdown-content">
+			<div class={`note-layout-beta ${hasContents && table_of_contents.length > 0 ? "note-layout-beta--with-toc" : "note-layout-beta--no-toc"}`}>
+				<article class="note-main-beta markdown" id="markdown-content">
 					<Content />
-				</main>
+				</article>
 
-				{note.data.contents && (
-					<aside class="note-toc">
-						<div class="sticky top-3 note-toc-inner">
-							<div class="toc-header">
+				{hasContents && table_of_contents.length > 0 && (
+					<aside class="note-toc-beta">
+						<div class="note-toc-beta__inner">
+							<div class="note-toc-beta__header">
 								<h3>{t("note.contents")}</h3>
 							</div>
-							<nav class="toc-nav">
+							<nav class="note-toc-beta__nav">
 								<TOC headings={table_of_contents} />
 							</nav>
 						</div>
@@ -188,21 +246,26 @@ const structuredData = {
 			</div>
 		</Sensitive>
 
-		<div class="flex gap-3 items-center social-share">
-			<span class="text-sm text-secondary">{t("share.title")}:</span>
-			<a href={`https://x.com/intent/tweet?text=${encodeURIComponent(note.data.title)}&url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${realNoteId}`)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--twitter" aria-label={t("share.twitter")}>
+		<div class="note-share-beta">
+			<span class="note-share-beta__label">{t("share.title")}:</span>
+			<a
+				href={`https://x.com/intent/tweet?text=${encodeURIComponent(note.data.title)}&url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${realNoteId}`)}`}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="share-pill share-pill--x"
+				aria-label={t("share.twitter")}
+			>
 				<Icon name="simple-icons:x" class="w-4 h-4" />
-				<span class="sr-only">{t("share.twitter")}</span>
 			</a>
 
-			<a href={`https://t.me/share/url?url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${realNoteId}`)}&text=${encodeURIComponent(note.data.title)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--telegram" aria-label={t("share.telegram")}>
+			<a
+				href={`https://t.me/share/url?url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${realNoteId}`)}&text=${encodeURIComponent(note.data.title)}`}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="share-pill share-pill--tg"
+				aria-label={t("share.telegram")}
+			>
 				<Icon name="simple-icons:telegram" class="w-4 h-4" />
-				<span class="sr-only">{t("share.telegram")}</span>
-			</a>
-
-			<a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://tedu-notes.ru${localePrefix}/note/${realNoteId}`)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--linkedin" aria-label={t("share.linkedin")}>
-				<Icon name="simple-icons:linkedin" class="w-4 h-4" />
-				<span class="sr-only">{t("share.linkedin")}</span>
 			</a>
 		</div>
 
@@ -211,136 +274,282 @@ const structuredData = {
 </Base>
 
 <script>
-	// Update reading progress bar as user scrolls
-	function updateProgress() {
-		const content = document.getElementById('markdown-content');
-		const progress = document.getElementById('reading-progress');
-		if (!content || !progress) return;
-
-		const contentTop = content.offsetTop;
-		const contentHeight = content.offsetHeight;
-		const windowHeight = window.innerHeight;
-		const scrollTop = window.scrollY;
-
-		const progressPercent = Math.min(100, Math.max(0,
-			((scrollTop - contentTop + windowHeight) / contentHeight) * 100
-		));
-
-		progress.style.width = `${progressPercent}%`;
-	}
-
-	document.addEventListener('scroll', updateProgress);
-	document.addEventListener('DOMContentLoaded', updateProgress);
-
-	// Smooth scroll for TOC anchor links
-	document.addEventListener('click', (e) => {
-		const target = e.target as HTMLElement;
+	document.addEventListener("click", (e) => {
+		const target = e.target as HTMLElement | null;
+		if (!target) return;
 		if (target.matches('a[href^="#"]')) {
+			const href = target.getAttribute("href");
+			if (!href || href === "#") return;
 			e.preventDefault();
-			const id = target.getAttribute('href')?.slice(1);
-			const element = document.getElementById(id || '');
-			if (element) {
-				element.scrollIntoView({ behavior: 'smooth' });
-			}
+			const id = href.slice(1);
+			const el = document.getElementById(id);
+			if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 		}
 	});
 </script>
 
 <style>
-.sr-only {
-	position: absolute !important;
-	width: 1px !important;
-	height: 1px !important;
-	padding: 0 !important;
-	margin: -1px !important;
-	overflow: hidden !important;
-	clip: rect(0,0,0,0) !important;
-	white-space: nowrap !important;
-	border: 0 !important;
+.note-page {
+	display: flex;
+	flex-direction: column;
+	gap: 1.75rem;
 }
 
-.share-btn {
+.note-breadcrumbs {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem;
+	font-size: 0.8rem;
+	color: var(--remark-color);
+}
+
+.crumb {
+	color: inherit;
+	text-decoration: none;
+	padding: 0.1rem 0.2rem;
+	border-radius: 4px;
+	transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.crumb:hover {
+	color: var(--primary-color);
+	background: color-mix(in srgb, var(--primary-color) 6%, transparent 94%);
+}
+
+.crumb--current {
+	font-weight: 600;
+	color: var(--primary-color);
+}
+
+.crumb-sep {
+	width: 14px;
+	height: 14px;
+	color: color-mix(in srgb, var(--remark-color) 70%, transparent 30%);
+}
+
+.note-hero-beta {
+	display: grid;
+	gap: 1.5rem;
+	padding: clamp(1.2rem, 3vw, 1.8rem);
+	border-radius: 1.25rem;
+	background:
+		linear-gradient(
+			135deg,
+			color-mix(in oklab, var(--primary-color) 8%, transparent) 0%,
+			transparent 40%
+		),
+		color-mix(in oklab, var(--background-color) 95%, var(--primary-color) 5%);
+	box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+/* Когда есть обложка — две колонки, когда нет — одна на всю ширину */
+.note-hero-beta--with-image {
+	grid-template-columns: minmax(0, 2.3fr) minmax(220px, 1.4fr);
+}
+
+.note-hero-beta--no-image {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.note-hero-beta__content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.65rem;
+}
+
+.label-series {
 	display: inline-flex;
 	align-items: center;
-	justify-content: center;
-	gap: 0.5rem;
-	width: 40px;
-	height: 36px;
-	border-radius: 8px;
-	color: var(--background-color);
-	transition: transform 0.12s ease, background-color 0.12s ease;
-}
-
-.share-btn--twitter { background: #ffffff; }
-.share-btn--twitter:hover { background: #f0f0f0; transform: translateY(-2px); }
-
-.share-btn--telegram { background: #26A5E4; }
-.share-btn--telegram:hover { background: #1b8fc5; transform: translateY(-2px); }
-
-.share-btn--linkedin { background: #0077B5; }
-.share-btn--linkedin:hover { background: #005f95; transform: translateY(-2px); }
-
-.note-hero {
-	border-radius: 12px;
-	padding: clamp(1rem, 3vw, 2rem);
-	background: linear-gradient(90deg, color-mix(in oklab, var(--primary-color) 6%, transparent), transparent 60%);
-	box-shadow: 0 10px 30px rgba(2,6,23,0.04);
-}
-
-.note-hero-inner { max-width: 1100px; margin: 0 auto; }
-.note-hero-top { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-
-.series-badge {
-	display: inline-flex;
-	gap: 0.5rem;
-	align-items: center;
-	padding: 0.25rem 0.6rem;
+	gap: 0.4rem;
+	padding: 0.24rem 0.6rem;
 	border-radius: 999px;
-	background: color-mix(in oklab, var(--primary-color) 10%, transparent);
-	border: 1px solid color-mix(in oklab, var(--primary-color) 18%, transparent);
+	background: color-mix(in oklab, var(--primary-color) 12%, transparent);
+	color: var(--primary-color);
+	font-size: 0.75rem;
 	font-weight: 600;
 }
 
-.note-h1 { margin: 0; font-size: clamp(1.8rem, 4.6vw, 3rem); }
-.note-excerpt { margin: 0.5rem 0 0; color: var(--remark-color); font-size: 1rem; }
+.note-title-beta {
+	margin: 0;
+	font-size: clamp(1.9rem, 4.6vw, 3rem);
+	line-height: 1.05;
+}
 
-.note-meta-row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-top: 0.75rem; }
+.title-line {
+	display: block;
+}
 
-.meta-item {
-	display: inline-flex;
-	gap: 0.5rem;
+.note-subtitle-beta {
+	margin: 0.1rem 0 0;
+	font-size: 0.96rem;
+	color: var(--remark-color);
+}
+
+.note-meta-beta {
+	margin-top: 0.4rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+}
+
+.note-meta-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
 	align-items: center;
-	padding: 0.3rem 0.6rem;
+}
+
+.meta-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.26rem 0.6rem;
 	border-radius: 999px;
-	background: color-mix(in oklab, var(--background-color) 96%, var(--primary-color) 2%);
-	border: 1px solid color-mix(in oklab, var(--primary-color) 12%, transparent);
-	font-size: 0.95rem;
+	background: color-mix(in oklab, var(--background-color) 96%, var(--primary-color) 4%);
+	border: 1px solid color-mix(in oklab, var(--primary-color) 16%, transparent);
+	font-size: 0.78rem;
 }
 
-.meta-updated { background: color-mix(in oklab, var(--primary-color) 8%, transparent); }
-
-.tags { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
-.tag-chip { padding: 0.2rem 0.5rem; border-radius: 999px; background: color-mix(in oklab, var(--primary-color) 6%, transparent); border: 1px solid color-mix(in oklab, var(--primary-color) 14%, transparent); }
-
-.note-layout { display: grid; grid-template-columns: 1fr 260px; gap: 1.25rem; align-items: start; }
-
-.note-main { min-width: 0; overflow: hidden; }
-.note-main.markdown { width: 100%; max-width: 100%; display: block; }
-
-.note-toc { display: block; min-width: 0; }
-.note-toc-inner { padding-left: 0.5rem; }
-.toc-header h3 { margin: 0 0 0.5rem 0; font-size: 1rem; }
-.toc-nav { max-height: 72vh; overflow: auto; }
-
-@media (max-width: 860px) {
-	.note-layout { grid-template-columns: 1fr; }
-	.note-toc { display: none; }
+.meta-pill--soft {
+	background: color-mix(in oklab, var(--primary-color) 10%, transparent);
+	color: var(--secondary-color);
 }
 
-.note-main section { min-width: 0 !important; width: 100%; }
+.meta-pill--ghost {
+	background: transparent;
+	border-style: dashed;
+}
 
-.callout { padding: 0.8rem 1rem; border-radius: 10px; margin: 0.9rem 0; display: flex; gap: 0.75rem; align-items: flex-start; }
-.callout--info { background: color-mix(in oklab, var(--primary-color) 6%, transparent); border: 1px solid color-mix(in oklab, var(--primary-color) 14%, transparent); }
-.callout--tip { background: color-mix(in oklab, #00c853 6%, transparent); border: 1px solid color-mix(in oklab, #00c853 14%, transparent); }
-.callout--warn { background: color-mix(in oklab, #ffb300 6%, transparent); border: 1px solid color-mix(in oklab, #ffb300 14%, transparent); }
+.meta-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem;
+}
+
+.tag-pill {
+	padding: 0.18rem 0.5rem;
+	border-radius: 999px;
+	background: color-mix(in oklab, var(--primary-color) 7%, transparent);
+	border: 1px solid color-mix(in oklab, var(--primary-color) 18%, transparent);
+	font-size: 0.72rem;
+}
+
+.note-hero-beta__image {
+	align-self: center;
+	border-radius: 0.9rem;
+	overflow: hidden;
+	border: 1px solid color-mix(in oklab, var(--primary-color) 20%, transparent);
+	background: radial-gradient(circle at top, rgba(255, 255, 255, 0.14), transparent);
+}
+
+.note-hero-beta__image img {
+	width: 100%;
+	max-height: 220px;
+	object-fit: cover;
+	display: block;
+}
+
+.note-layout-beta {
+	margin-top: 0.75rem;
+	display: grid;
+	gap: 1.5rem;
+	align-items: flex-start;
+}
+
+/* С TOC две колонки, без TOC контент на всю ширину */
+.note-layout-beta--with-toc {
+	grid-template-columns: minmax(0, 2.3fr) minmax(220px, 1.2fr);
+}
+
+.note-layout-beta--no-toc {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.note-main-beta {
+	min-width: 0;
+}
+
+.note-toc-beta {
+	min-width: 0;
+}
+
+.note-toc-beta__inner {
+	position: sticky;
+	top: 1rem;
+	padding: 0.75rem 0.6rem 0.75rem 0.9rem;
+	border-radius: 0.9rem;
+	background: color-mix(in oklab, var(--background-color) 98%, var(--primary-color) 2%);
+	border: 1px solid color-mix(in oklab, var(--primary-color) 16%, transparent);
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.note-toc-beta__header h3 {
+	margin: 0 0 0.35rem;
+	font-size: 0.86rem;
+	font-weight: 600;
+	color: var(--remark-color);
+}
+
+.note-toc-beta__nav {
+	max-height: 70vh;
+	overflow-y: auto;
+	padding-right: 0.25rem;
+}
+
+.note-share-beta {
+	margin-top: 0.5rem;
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-size: 0.8rem;
+	color: var(--remark-color);
+}
+
+.note-share-beta__label {
+	margin-right: 0.25rem;
+}
+
+.share-pill {
+	width: 30px;
+	height: 30px;
+	border-radius: 999px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: #ffffff;
+	transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+
+.share-pill--x {
+	background: #111111;
+}
+
+.share-pill--tg {
+	background: #26a5e4;
+}
+
+.share-pill:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+}
+
+@media (max-width: 880px) {
+	.note-hero-beta {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.note-hero-beta__image {
+		order: -1;
+		max-height: 220px;
+	}
+
+	.note-layout-beta {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.note-toc-beta {
+		display: none;
+	}
+}
 </style>

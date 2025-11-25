@@ -158,6 +158,25 @@ const structuredData = {
 						<span>{note.data.series}</span>
 					</div>
 				)}
+			
+				{note.data.image && (
+					<div class="note-hero-beta__image-wrapper">
+						<div class="note-hero-beta__image">
+							<img
+								src={note.data.image}
+								alt={note.data.image_alt ?? note.data.title}
+								loading="lazy"
+								decoding="async"
+							/>
+						</div>
+						{note.data.image_alt && (
+							<figcaption class="note-hero-beta__image-caption">
+								{note.data.image_alt}
+							</figcaption>
+						)}
+					</div>
+				)}
+
 
 				<h1 class="note-title-beta" style={`font-family: var(--note-title-font);`}>
 					{titleLines.map((line) => (
@@ -212,17 +231,6 @@ const structuredData = {
 					</div>
 				</div>
 			</div>
-
-			{note.data.image && (
-				<div class="note-hero-beta__image">
-					<img
-						src={note.data.image}
-						alt={note.data.image_alt ?? note.data.title}
-						loading="lazy"
-						decoding="async"
-					/>
-				</div>
-			)}
 		</header>
 
 		<Sensitive {locale} back="/note" sensitive={note.data.sensitive} client:load>
@@ -329,7 +337,8 @@ const structuredData = {
 }
 
 .note-hero-beta {
-	display: grid;
+	display: flex;
+	flex-direction: column;
 	gap: 1.5rem;
 	padding: clamp(1.2rem, 3vw, 1.8rem);
 	border-radius: 1.25rem;
@@ -343,13 +352,12 @@ const structuredData = {
 	box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
 }
 
-/* Когда есть обложка — две колонки, когда нет — одна на всю ширину */
 .note-hero-beta--with-image {
-	grid-template-columns: minmax(0, 2.3fr) minmax(220px, 1.4fr);
+	gap: 1.5rem;
 }
 
 .note-hero-beta--no-image {
-	grid-template-columns: minmax(0, 1fr);
+	gap: 0;
 }
 
 .note-hero-beta__content {
@@ -450,6 +458,20 @@ const structuredData = {
 	display: block;
 }
 
+.note-hero-beta__image-wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+}
+
+.note-hero-beta__image-caption {
+	font-size: 0.8rem;
+	color: var(--remark-color);
+	font-style: italic;
+	text-align: center;
+	padding: 0 0.5rem;
+}
+
 .note-layout-beta {
 	margin-top: 0.75rem;
 	display: grid;
@@ -539,9 +561,8 @@ const structuredData = {
 		grid-template-columns: minmax(0, 1fr);
 	}
 
-	.note-hero-beta__image {
-		order: -1;
-		max-height: 220px;
+	.note-hero-beta__image-wrapper {
+		width: 100%;
 	}
 
 	.note-layout-beta {
